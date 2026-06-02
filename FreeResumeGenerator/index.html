@@ -136,6 +136,11 @@ select option{background:#111;}
 .item-row .fields .s2{grid-column:1/-1;}
 .skill-row{display:grid;grid-template-columns:1fr 90px 34px;gap:8px;align-items:center;}
 .skill-row input,.skill-row select{margin:0;}
+/* 2-per-row skill layout for soft/interpersonal */
+.skill-dlist{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.skill-dlist .skill-row{grid-template-columns:1fr 76px 28px;}
+.skill-dlist .btn-rm{width:28px;height:28px;}
+@media(max-width:768px){.skill-dlist{grid-template-columns:1fr;}}
 
 .cert-fields{flex:1;display:grid;grid-template-columns:1fr 1fr;gap:7px;}
 .cert-fields input,.cert-fields textarea,.cert-fields select{margin:0;}
@@ -278,9 +283,15 @@ select option{background:#111;}
         <div class="swatch" data-color="#8e44ad" style="background:#8e44ad" title="Violet" onclick="setColor(this)"></div>
         <div class="swatch" data-color="#c0392b" style="background:#c0392b" title="Red" onclick="setColor(this)"></div>
         <div class="swatch" data-color="#e67e22" style="background:#e67e22" title="Orange" onclick="setColor(this)"></div>
-         <div class="swatch" data-color="#DC143C" style="background:#DC143C" title="Crimson" onclick="setColor(this)"></div>
         <div class="swatch" data-color="#16a085" style="background:#16a085" title="Teal" onclick="setColor(this)"></div>
         <div class="swatch" data-color="#888" style="background:#888" title="Slate" onclick="setColor(this)"></div>
+        <div class="swatch" data-color="#DC143C" style="background:#DC143C" title="Crimson" onclick="setColor(this)"></div>
+        <div class="swatch" data-color="#440E03" style="background:#440E03" title="Midnight" onclick="setColor(this)"></div>
+        <div class="swatch" data-color="#212E54" style="background:#212E54" title="Plum" onclick="setColor(this)"></div>
+      <div class="swatch" data-color="#FF9EFB" style="background:#FF9EFB" title="Pink" onclick="setColor(this)"></div>
+
+
+
       </div>
     </div>
     <div class="cust-box">
@@ -359,9 +370,9 @@ select option{background:#111;}
         </div>
         <div class="acc-body">
           <div class="form-grid">
-            <div class="fg"><label>Phone 1 *</label><input type="tel" id="phone1" placeholder="+1 234 567 890" oninput="validateField(this)"><div class="err-msg" id="err-phone1">Required</div></div>
+            <div class="fg"><label>Phone 1</label><input type="tel" id="phone1" placeholder="+1 234 567 890"></div>
             <div class="fg"><label>Phone 2 (optional)</label><input type="tel" id="phone2" placeholder="+1 234 567 891"></div>
-            <div class="fg"><label>Email *</label><input type="email" id="email" placeholder="john@example.com" oninput="validateEmail(this)"><div class="err-msg" id="err-email">Valid email required</div></div>
+            <div class="fg"><label>Email</label><input type="email" id="email" placeholder="john@example.com"></div>
             <div class="fg"><label>Website</label><input type="text" id="website" placeholder="www.johndoe.com"></div>
             <div class="fg full"><label>Address</label><input type="text" id="address" placeholder="123 Street, City, State"></div>
           </div>
@@ -527,7 +538,7 @@ select option{background:#111;}
           <div class="form-grid">
             <div class="fg">
               <label>Software / Technical Skills</label>
-              <div class="dlist" id="softList">
+              <div class="skill-dlist" id="softList">
                 <div class="skill-row">
                   <input type="text" placeholder="e.g. Photoshop" class="sk-name">
                   <select class="sk-level"><option value="90">Expert</option><option value="75" selected>Good</option><option value="55">Basic</option><option value="40">Learning</option></select>
@@ -538,7 +549,7 @@ select option{background:#111;}
             </div>
             <div class="fg">
               <label>Interpersonal Skills</label>
-              <div class="dlist" id="interList">
+              <div class="skill-dlist" id="interList">
                 <div class="skill-row">
                   <input type="text" placeholder="e.g. Communication" class="sk-name">
                   <select class="sk-level"><option value="90">Expert</option><option value="75" selected>Good</option><option value="55">Basic</option><option value="40">Learning</option></select>
@@ -788,12 +799,10 @@ function validateEmail(el){
 }
 function validateAll(){
   let ok = true;
-  ['firstName','lastName','jobTitle','phone1'].forEach(id=>{
+  ['firstName','lastName','jobTitle'].forEach(id=>{
     const el = document.getElementById(id);
     if(!validateField(el)) ok = false;
   });
-  const emailEl = document.getElementById('email');
-  if(!validateEmail(emailEl)) ok = false;
   return ok;
 }
 
