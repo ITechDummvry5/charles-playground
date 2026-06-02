@@ -116,14 +116,52 @@
   .hobby-wrap{display:flex;flex-wrap:wrap;gap:4px;}
   .hobby-tag{font-size:6.8pt;background:#f0ede8;border:1px solid #e0ddd6;border-radius:10px;padding:2px 8px;color:#666;}
 
+  /* ── RESPONSIVE SCREEN ── */
+  @media screen and (max-width:860px){
+    body{padding:16px 8px 40px;}
+    .toolbar{flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:16px;}
+    .tb-btn{font-size:.65rem;padding:7px 14px;}
+    .page{width:100%;min-height:unset;}
+    .header-band{padding:24px 24px 18px;gap:0 20px;}
+    .hb-name{font-size:20pt;}
+    .hb-photo,.hb-photo-placeholder{width:120px;height:120px;}
+    .main-col{padding:20px 20px 24px 24px;}
+    .side-col{padding:20px 16px;}
+    .body-grid{grid-template-columns:1fr 180px;}
+  }
+
+  @media screen and (max-width:640px){
+    body{padding:8px 0 40px;}
+    .toolbar{padding:0 12px;}
+    .page{display:flex;flex-direction:column;width:100%;}
+    .header-band{grid-template-columns:1fr;padding:20px 16px 16px;}
+    .hb-right{align-items:flex-start;margin-top:12px;}
+    .hb-photo,.hb-photo-placeholder{width:80px;height:80px;border-radius:4px;}
+    .hb-name{font-size:18pt;}
+    .contact-strip{padding:8px 14px;gap:4px 16px;}
+    .body-grid{grid-template-columns:1fr;display:flex;flex-direction:column;}
+    .main-col{padding:18px 16px;border-right:none;border-bottom:1px solid #e0ddd6;}
+    .side-col{padding:18px 16px;}
+    .ref-2col{grid-template-columns:1fr;}
+    .cert-list{flex-direction:column;}
+    .cert-row{flex:unset;}
+  }
+
   @media print{
     @page{size:A4;margin:0;}
     *{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
     body{background:#fff;padding:0;margin:0;}
     .toolbar{display:none;}
-    .page{box-shadow:none;width:100%;min-height:auto;overflow:visible;}
-    .body-grid{overflow:visible;}
-    .main-col,.side-col{overflow:visible;}
+    .page{box-shadow:none;width:794px;min-height:auto;overflow:visible;display:flex;flex-direction:column;}
+    .header-band{grid-template-columns:1fr auto;display:grid;padding:40px 50px 28px;}
+    .hb-right{align-items:flex-end;}
+    .hb-photo,.hb-photo-placeholder{width:100px;height:100px;}
+    .body-grid{flex:1;display:grid;grid-template-columns:1fr 224px;flex-direction:unset;}
+    .main-col{padding:28px 34px 32px 50px;border-right:1px solid #e8e5de;border-bottom:none;}
+    .side-col{padding:28px 24px;}
+    .ref-2col{grid-template-columns:1fr 1fr;}
+    .cert-list{flex-direction:row;}
+    .cert-row{flex:0 0 calc(50% - 5px);}
     .exp-item,.proj-item,.award-item,.train-row,.cert-row,.ref-card{break-inside:avoid;}
     .section-gap{break-inside:avoid;}
   }

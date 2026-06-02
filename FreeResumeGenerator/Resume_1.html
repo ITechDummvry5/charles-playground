@@ -51,7 +51,8 @@
   .p-lbl{font-size:5.8pt;letter-spacing:.15em;text-transform:uppercase;color:#555;}
   .p-val{font-size:7.5pt;color:#aaa;}
 
-  .skill-item{margin-bottom:9px;}
+  .skills-2col{display:grid;grid-template-columns:1fr 1fr;gap:4px 10px;}
+  .skill-item{margin-bottom:6px;}
   .skill-name{font-size:7.6pt;color:#bbb;margin-bottom:3px;display:flex;justify-content:space-between;}
   .skill-name span{color:#555;font-size:6.5pt;}
   .bar-track{height:3px;background:#232323;border-radius:2px;}
@@ -123,16 +124,66 @@
 
   .section-gap{margin-bottom:7px;}
 
+  /* ── RESPONSIVE SCREEN ── */
+  @media screen and (max-width:860px){
+    body{padding:16px 8px 40px;}
+    .toolbar{flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:16px;}
+    .tb-btn{font-size:.65rem;padding:7px 14px;}
+    /* Scale the fixed-width page to fit the viewport */
+    .page{
+      width:100%;
+      min-height:unset;
+      grid-template-columns:220px 1fr;
+      transform-origin:top center;
+    }
+    .sb-fname,.sb-lname{font-size:16pt;}
+    .sb-section{padding:0 16px 0;}
+    .main{padding:20px 20px;}
+  }
+
+  @media screen and (max-width:640px){
+    body{padding:8px 0 40px;}
+    .toolbar{padding:0 12px;}
+    /* Stack sidebar on top of main on very small screens */
+    .page{
+      display:flex;
+      flex-direction:column;
+      width:100%;
+    }
+    .sidebar{
+      width:100%;
+      flex-direction:row;
+      flex-wrap:wrap;
+      padding-bottom:16px;
+    }
+    .sb-photo-wrap{padding:20px 16px 0;width:100%;display:flex;flex-direction:row;align-items:center;gap:16px;}
+    .sb-name-block{padding:16px 16px 0;text-align:left;flex:1;}
+    .sb-fname,.sb-lname{font-size:18pt;}
+    .sb-section{padding:0 16px;width:50%;}
+    .sb-divider{display:none;}
+    .main{padding:20px 16px;}
+    .cert-grid{grid-template-columns:1fr;}
+    .ref-grid{grid-template-columns:1fr;}
+    .timeline-item{grid-template-columns:60px 1fr;}
+  }
+
   @media print{
     @page{size:A4;margin:0;}
     *{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
     body{background:#fff;padding:0;margin:0;}
     .toolbar{display:none;}
-    .page{box-shadow:none;width:100%;min-height:auto;overflow:visible;}
-    .sidebar{overflow:visible;}
-    .main{overflow:visible;}
+    .page{box-shadow:none;width:794px;min-height:auto;overflow:visible;display:grid;grid-template-columns:264px 1fr;flex-direction:unset;}
+    .sidebar{width:unset;flex-direction:column;flex-wrap:unset;overflow:visible;}
+    .sb-photo-wrap{flex-direction:column;align-items:center;}
+    .sb-name-block{text-align:center;}
+    .sb-section{width:unset;padding:0 26px 0;}
+    .sb-divider{display:block;}
+    .main{overflow:visible;padding:32px 36px;}
     .timeline-item,.proj-card,.award-item,.train-item,.cert-card,.ref-card{break-inside:avoid;}
     .section-gap{break-inside:avoid;}
+    .cert-grid{grid-template-columns:1fr 1fr;}
+    .ref-grid{grid-template-columns:1fr 1fr;}
+    .timeline-item{grid-template-columns:80px 1fr;}
   }
 </style>
 </head>
@@ -173,13 +224,13 @@
     <div class="sb-divider"></div>
     <div class="sb-section" id="sb-soft-sec">
       <div class="sb-sec-title">Software Skills</div>
-      <div id="sb-soft-skills"></div>
+      <div class="skills-2col" id="sb-soft-skills"></div>
     </div>
 
     <div class="sb-divider"></div>
     <div class="sb-section" id="sb-inter-sec">
       <div class="sb-sec-title">Interpersonal Skills</div>
-      <div id="sb-inter-skills"></div>
+      <div class="skills-2col" id="sb-inter-skills"></div>
     </div>
 
     <div class="sb-divider"></div>
