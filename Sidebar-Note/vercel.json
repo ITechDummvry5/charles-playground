@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/",
+      "destination": "/usermanual2026_admin.html"
+    }
+  ]
+}

@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ResumeCraft – Resume Builder</title>
+<link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
+<link rel="preconnect" href="https://fonts.googleapis.com"> 
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=DM+Sans:wght@300;400;500;600&family=Montserrat:wght@400;600;700&family=Ubuntu:ital,wght@0,300;0,400;0,500;0,700;1,300;1,400;1,500;1,700&family=Bebas+Neue&family=Oswald:wght@400;500;600;700&family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --black:#0c0c0c; --white:#f4f4ef; --gray:#777; --line:#1e1e1e;
+  --accent:#c9a96e; --accent-dim:rgba(201,169,110,0.10);
+  --surface:#0f0f0f; --surface2:#141414;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--black);color:var(--white);font-family:'DM Sans',sans-serif;min-height:100vh;transition:background .3s,color .3s;}
+
+body.light{--black:#f0eeea;--white:#1a1a1a;--line:#ddd;--gray:#888;--surface:#fff;--surface2:#f8f7f4;}
+body.light header{border-bottom-color:#ddd;}
+body.light .t-card{background:#fff;border-color:#ddd;}
+body.light input[type="text"],body.light input[type="email"],body.light input[type="tel"],body.light input[type="number"],body.light input[type="date"],body.light textarea,body.light select{background:#fff;border-color:#ddd;color:#1a1a1a;}
+body.light select option{background:#fff;color:#1a1a1a;}
+body.light .btn-rm{border-color:#ddd;}
+body.light .btn-add-txt{border-color:#ddd;color:#888;}
+body.light .photo-drop{border-color:#ddd;}
+body.light .cert-img-drop{border-color:#ddd;}
+body.light .progress-bar-bg{background:#e0ddd6;}
+body.light .section-accordion{border-color:#e0ddd6;}
+body.light .acc-header{background:#f5f3ef;}
+body.light .acc-header:hover{background:#ede9e2;}
+
+header{padding:22px 60px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;}
+.logo{font-family:'Playfair Display',serif;font-size:1.25rem;letter-spacing:.04em;color:var(--accent);}
+.logo span{color:var(--white);}
+.logo-tag{font-size:.58rem;letter-spacing:.18em;text-transform:uppercase;color:var(--gray);}
+.header-right{display:flex;align-items:center;gap:14px;}
+.save-indicator{font-size:.65rem;letter-spacing:.1em;text-transform:uppercase;color:#444;transition:color .4s;}
+.save-indicator.saved{color:#4a8c62;}
+
+.mode-toggle{background:none;border:1px solid var(--line);border-radius:20px;padding:6px 12px;color:var(--gray);font-size:.7rem;font-family:'DM Sans',sans-serif;cursor:pointer;display:flex;align-items:center;gap:5px;letter-spacing:.08em;transition:border-color .2s,color .2s;}
+.mode-toggle:hover{border-color:var(--accent);color:var(--accent);}
+
+.hdr-btn{background:none;border:1px solid var(--line);border-radius:2px;padding:6px 13px;color:var(--gray);font-size:.65rem;font-family:'DM Sans',sans-serif;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;transition:all .2s;}
+.hdr-btn:hover{border-color:var(--accent);color:var(--accent);}
+
+.hero{text-align:center;padding:60px 40px 36px;}
+.hero-eye{font-size:.6rem;letter-spacing:.24em;text-transform:uppercase;color:var(--accent);margin-bottom:14px;}
+.hero h1{font-family:'Playfair Display',serif;font-size:4rem;font-weight:900;line-height:1.04;letter-spacing:-.025em;}
+.hero h1 em{font-family: 'Inter', sans-serif;color:var(--accent);}
+.hero p{margin-top:14px;color:var(--gray);font-size:.9rem;font-weight:300;letter-spacing:.06em;}
+
+.progress-wrap{max-width:1040px;margin:0 auto 6px;padding:0 40px;}
+.progress-label{font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:var(--gray);margin-bottom:7px;display:flex;justify-content:space-between;}
+.progress-label span{color:var(--accent);font-weight:600;}
+.progress-bar-bg{height:3px;background:#1c1c1c;border-radius:2px;overflow:hidden;}
+.progress-bar-fill{height:100%;background:var(--accent);border-radius:2px;transition:width .5s ease;}
+
+.container{max-width:1040px;margin:0 auto;padding:0 40px 100px;}
+
+.s-lbl{font-size:.6rem;letter-spacing:.22em;text-transform:uppercase;color:var(--accent);margin-bottom:16px;margin-top:44px;display:flex;align-items:center;gap:12px;}
+.s-lbl::after{content:'';flex:1;height:1px;background:var(--line);}
+
+.tpl-cards{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.t-card{position:relative;border:1.5px solid var(--line);border-radius:3px;padding:24px;cursor:pointer;background:var(--surface);transition:border-color .2s,transform .2s;user-select:none;}
+.t-card:hover{border-color:#444;transform:translateY(-2px);}
+.t-card.active{border-color:var(--accent);background:var(--accent-dim);}
+.t-card input{display:none;}
+.t-num{font-family:'Playfair Display',serif;font-size:2.8rem;font-weight:900;color:#1c1c1c;line-height:1;margin-bottom:8px;transition:color .2s;}
+.t-card.active .t-num{color:var(--accent);opacity:.35;}
+.t-name{font-size:.95rem;font-weight:600;letter-spacing:.04em;margin-bottom:4px;}
+.t-desc{font-size:.76rem;color:var(--gray);line-height:1.55;}
+.t-badge{position:absolute;top:12px;right:12px;font-size:.56rem;letter-spacing:.14em;text-transform:uppercase;padding:3px 10px;border-radius:20px;border:1px solid #2a2a2a;color:var(--gray);transition:all .2s;}
+.t-card.active .t-badge{background:var(--accent);color:var(--black);border-color:var(--accent);}
+
+.customize-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:0;}
+.cust-box{background:var(--surface);border:1px solid var(--line);border-radius:3px;padding:16px 18px;}
+.cust-title{font-size:.58rem;letter-spacing:.2em;text-transform:uppercase;color:var(--accent);margin-bottom:10px;}
+.color-swatches{display:flex;gap:8px;flex-wrap:wrap;}
+.swatch{width:28px;height:28px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:border-color .2s,transform .2s;}
+.swatch:hover{transform:scale(1.15);}
+.swatch.active{border-color:var(--white);}
+.font-opts{display:flex;flex-wrap:wrap;gap:7px;}
+.font-opt{font-size:.72rem;padding:4px 12px;border-radius:2px;border:1px solid var(--line);color:var(--gray);cursor:pointer;background:none;font-family:'DM Sans',sans-serif;transition:all .2s;}
+.font-opt:hover{border-color:var(--accent);color:var(--accent);}
+.font-opt.active{background:var(--accent);border-color:var(--accent);color:var(--black);}
+
+.sections-list{display:flex;flex-direction:column;gap:2px;margin-top:4px;}
+.section-accordion{border:1px solid var(--line);border-radius:3px;overflow:hidden;}
+.acc-header{display:flex;align-items:center;justify-content:space-between;padding:13px 18px;cursor:pointer;background:var(--surface);user-select:none;transition:background .15s;}
+.acc-header:hover{background:var(--surface2);}
+.acc-header-left{display:flex;align-items:center;gap:10px;}
+.acc-num{font-family:'Playfair Display',serif;font-size:1.2rem;color:#2a2a2a;width:28px;}
+.acc-title-t{font-size:.82rem;font-weight:600;letter-spacing:.03em;}
+.acc-tag{font-size:.55rem;letter-spacing:.14em;text-transform:uppercase;padding:2px 8px;border-radius:10px;border:1px solid #2a2a2a;color:var(--gray);}
+.acc-tag.opt{border-color:#2d5a3d;color:#4a8c62;}
+.acc-chevron{color:var(--gray);transition:transform .25s;}
+.acc-chevron.open{transform:rotate(180deg);}
+.acc-body{display:none;padding:20px 20px 14px;}
+.acc-body.open{display:block;}
+
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 44px;}
+.fg{margin-bottom:18px;}
+.fg.full{grid-column:1/-1;}
+.divider{grid-column:1/-1;display:flex;align-items:center;gap:10px;margin:16px 0 4px;}
+.divider span{font-size:.56rem;letter-spacing:.2em;text-transform:uppercase;color:#3a3a3a;white-space:nowrap;}
+.divider::after{content:'';flex:1;height:1px;background:var(--line);}
+
+label{display:block;font-size:.59rem;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);margin-bottom:6px;}
+input[type="text"],input[type="email"],input[type="tel"],input[type="number"],input[type="date"],input[type="url"],textarea,select{
+  width:100%;background:var(--surface);border:1px solid var(--line);border-radius:2px;
+  color:var(--white);font-family:'DM Sans',sans-serif;font-size:.86rem;
+  padding:10px 12px;outline:none;transition:border-color .2s;resize:vertical;
+}
+input:focus,textarea:focus,select:focus{border-color:var(--accent);}
+input.error,textarea.error,select.error{border-color:#e74c3c;}
+.err-msg{font-size:.65rem;color:#e74c3c;margin-top:3px;display:none;}
+.err-msg.show{display:block;}
+textarea{min-height:72px;}
+select{cursor:pointer;}
+select option{background:#111;}
+
+.photo-drop{border:1.5px dashed #2a2a2a;border-radius:3px;height:116px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:border-color .2s,background .2s;position:relative;overflow:hidden;gap:7px;}
+.photo-drop:hover{border-color:var(--accent);background:var(--accent-dim);}
+.photo-drop input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+.photo-drop .ph-icon{color:#383838;transition:color .2s;}
+.photo-drop:hover .ph-icon{color:var(--accent);}
+.photo-drop .ph-hint{font-size:.7rem;color:var(--gray);}
+#photo-preview{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none;border-radius:3px;}
+
+.dlist{display:flex;flex-direction:column;gap:10px;}
+.item-row{display:flex;gap:8px;align-items:flex-start;}
+.item-row .fields{flex:1;display:grid;grid-template-columns:1fr 1fr;gap:7px;}
+.item-row .fields input,.item-row .fields textarea,.item-row .fields select{margin:0;}
+.item-row .fields .s2{grid-column:1/-1;}
+.skill-row{display:grid;grid-template-columns:1fr 90px 34px;gap:8px;align-items:center;}
+.skill-row input,.skill-row select{margin:0;}
+
+.cert-fields{flex:1;display:grid;grid-template-columns:1fr 1fr;gap:7px;}
+.cert-fields input,.cert-fields textarea,.cert-fields select{margin:0;}
+.cert-fields .s2{grid-column:1/-1;}
+.cert-img-drop{border:1.5px dashed #2a2a2a;border-radius:3px;height:74px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:border-color .2s,background .2s;position:relative;overflow:hidden;gap:4px;}
+.cert-img-drop:hover{border-color:var(--accent);background:var(--accent-dim);}
+.cert-img-drop input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+.cert-img-drop .ph-hint{font-size:.62rem;color:var(--gray);}
+.cert-img-drop .cert-preview{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none;border-radius:2px;}
+
+.social-row{display:grid;grid-template-columns:100px 1fr 34px;gap:8px;align-items:center;margin-bottom:8px;}
+.social-row select,.social-row input{margin:0;}
+
+.proj-fields{flex:1;display:grid;grid-template-columns:1fr 1fr;gap:7px;}
+.proj-fields input,.proj-fields textarea{margin:0;}
+.proj-fields .s2{grid-column:1/-1;}
+
+.btn-rm,.btn-add-txt{border-radius:2px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s;background:none;}
+.btn-rm{border:1px solid #252525;color:#555;width:34px;height:34px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.btn-rm:hover{border-color:#c0392b;color:#c0392b;}
+.btn-add-txt{border:1px solid #252525;color:var(--gray);margin-top:8px;padding:0 14px;height:34px;font-size:.72rem;letter-spacing:.1em;}
+.btn-add-txt:hover{border-color:var(--accent);color:var(--accent);}
+
+.gen-btn{display:block;width:100%;background:var(--accent);color:var(--black);font-family:'DM Sans',sans-serif;font-size:.76rem;font-weight:700;letter-spacing:.22em;text-transform:uppercase;padding:17px;border:none;border-radius:2px;cursor:pointer;margin-top:36px;transition:background .2s,transform .15s;}
+.gen-btn:hover{background:#d5b87c;transform:translateY(-1px);}
+.gen-btn:active{transform:translateY(0);}
+.bottom-btns{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;}
+.outline-btn{background:none;border:1px solid var(--line);border-radius:2px;color:var(--gray);font-family:'DM Sans',sans-serif;font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;padding:11px;cursor:pointer;transition:all .2s;}
+.outline-btn:hover{border-color:var(--accent);color:var(--accent);}
+.outline-btn.danger:hover{border-color:#c0392b;color:#c0392b;}
+
+#jsonLoadInput{display:none;}
+
+.val-banner{background:#c0392b;color:#fff;font-size:.78rem;padding:12px 18px;border-radius:3px;margin-top:18px;display:none;border-left:4px solid #922b21;}
+.val-banner.show{display:block;}
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="logo">Resume<span>Craft</span></div>
+    <div class="logo-tag">Professional Resume Builder</div>
+  </div>
+  <div class="header-right">
+    <button class="hdr-btn" onclick="document.getElementById('jsonLoadInput').click()">⬆ Load JSON</button>
+    <input type="file" id="jsonLoadInput" accept=".json" onchange="loadJSON(this)">
+    <button class="mode-toggle" id="modeToggle" onclick="toggleMode()">Light Mode</button>
+    <div class="save-indicator" id="saveIndicator">● Auto-saved</div>
+  </div>
+</header>
+
+<div class="hero">
+  <div class="hero-eye">Free &middot; Instant &middot; Printable PDF</div>
+  <h1>Build Your <em>Perfect</em><br>Resume Today</h1>
+  <p>Fill your details &nbsp;&middot;&nbsp; Choose a template &nbsp;&middot;&nbsp; Export A4 PDF</p>
+</div>
+
+<div class="progress-wrap">
+  <div class="progress-label">Completion <span id="progressPct">0%</span></div>
+  <div class="progress-bar-bg"><div class="progress-bar-fill" id="progressBar" style="width:0%"></div></div>
+</div>
+
+<div class="container">
+
+  <div class="s-lbl">01 — Choose Template</div>
+  <div class="tpl-cards">
+    <label class="t-card active" id="card1" onclick="selTpl(1)">
+      <input type="radio" name="tpl" value="1" checked>
+      <div class="t-num">01</div>
+      <div class="t-name">Dark Sidebar</div>
+      <div class="t-desc">Bold black left panel with a timeline layout. Best for creative & tech roles.</div>
+      <div class="t-badge">Selected</div>
+    </label>
+    <label class="t-card" id="card2" onclick="selTpl(2)">
+      <input type="radio" name="tpl" value="2">
+      <div class="t-num">02</div>
+      <div class="t-name">Light Minimal</div>
+      <div class="t-desc">Clean structured layout with right sidebar. Ideal for corporate roles.</div>
+      <div class="t-badge">Select</div>
+    </label>
+  </div>
+
+  <div class="s-lbl">02 — Customize</div>
+  <div class="customize-row">
+    <div class="cust-box">
+      <div class="cust-title">Theme Color</div>
+      <div class="color-swatches" id="colorSwatches">
+        <div class="swatch active" data-color="#c9a96e" style="background:#c9a96e" title="Gold" onclick="setColor(this)"></div>
+        <div class="swatch" data-color="#2d5a3d" style="background:#2d5a3d" title="Green" onclick="setColor(this)"></div>
+        <div class="swatch" data-color="#2980b9" style="background:#2980b9" title="Blue" onclick="setColor(this)"></div>
+        <div class="swatch" data-color="#8e44ad" style="background:#8e44ad" title="Violet" onclick="setColor(this)"></div>
+        <div class="swatch" data-color="#c0392b" style="background:#c0392b" title="Red" onclick="setColor(this)"></div>
+        <div class="swatch" data-color="#e67e22" style="background:#e67e22" title="Orange" onclick="setColor(this)"></div>
+        <div class="swatch" data-color="#16a085" style="background:#16a085" title="Teal" onclick="setColor(this)"></div>
+        <div class="swatch" data-color="#888" style="background:#888" title="Slate" onclick="setColor(this)"></div>
+      </div>
+    </div>
+    <div class="cust-box">
+      <div class="cust-title">Font Family</div>
+      <div class="font-opts" id="fontOpts">
+        <button class="font-opt active" data-font="Playfair Display" onclick="setFont(this)">Playfair</button>
+        <button class="font-opt" data-font="Poppins" onclick="setFont(this)">Poppins</button>
+        <button class="font-opt" data-font="Roboto" onclick="setFont(this)">Roboto</button>
+        <button class="font-opt" data-font="Lato" onclick="setFont(this)">Lato</button>
+        <button class="font-opt" data-font="Merriweather" onclick="setFont(this)">Merriweather</button>
+        <button class="font-opt" data-font="Raleway" onclick="setFont(this)">Raleway</button>
+        <button class="font-opt" data-font="Montserrat" onclick="setFont(this)">Montserrat</button>
+        <button class="font-opt" data-font="Ubuntu" onclick="setFont(this)">Ubuntu</button>
+        <button class="font-opt" data-font="Bebas Neue" onclick="setFont(this)">Bebas</button>
+        <button class="font-opt" data-font="Oswald" onclick="setFont(this)">Oswald</button>
+        <button class="font-opt" data-font="Inter" onclick="setFont(this)">Inter</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="s-lbl">03 — Your Details</div>
+  <div id="val-banner" class="val-banner">⚠ Please fix the highlighted fields before generating.</div>
+
+  <form id="rForm" onsubmit="generate(event)">
+    <div class="sections-list">
+
+      <!-- PERSONAL INFO -->
+      <div class="section-accordion">
+        <div class="acc-header" onclick="toggleAcc(this)">
+          <div class="acc-header-left">
+            <div class="acc-num">01</div>
+            <div class="acc-title-t">Personal Information</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span class="acc-chevron open">▾</span>
+          </div>
+        </div>
+        <div class="acc-body open">
+          <div class="form-grid">
+            <div class="fg"><label>First Name *</label><input type="text" id="firstName" placeholder="John" oninput="validateField(this)"><div class="err-msg" id="err-firstName">Required</div></div>
+            <div class="fg"><label>Last Name *</label><input type="text" id="lastName" placeholder="Doe" oninput="validateField(this)"><div class="err-msg" id="err-lastName">Required</div></div>
+            <div class="fg"><label>Job Title *</label><input type="text" id="jobTitle" placeholder="Graphic Designer" oninput="validateField(this)"><div class="err-msg" id="err-jobTitle">Required</div></div>
+            <div class="fg">
+              <label>Profile Photo</label>
+              <div class="photo-drop" onclick="document.getElementById('photoInput').click()">
+                <input type="file" id="photoInput" accept="image/*" onchange="prevPhoto(this)" style="display:none">
+                <img id="photo-preview" alt="">
+                <svg class="ph-icon" id="ph-icon" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="3" width="18" height="18" rx="2.5"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>
+                </svg>
+                <span class="ph-hint" id="ph-hint">Click to upload photo</span>
+              </div>
+            </div>
+            <div class="fg full"><label>Profile Summary</label><textarea id="profile" placeholder="Brief professional summary..."></textarea></div>
+            <div class="fg full"><label>Career Objective</label><textarea id="objective" placeholder="Seeking a position where I can apply my skills in..."></textarea></div>
+            <div class="fg">
+              <label>Gender</label>
+              <select id="gender"><option value="">— Select —</option><option>Male</option><option>Female</option><option>Non-binary</option><option>Prefer not to say</option></select>
+            </div>
+            <div class="fg">
+              <label>Civil Status</label>
+              <select id="civilStatus"><option value="">— Select —</option><option>Single</option><option>Married</option><option>Divorced</option><option>Widowed</option><option>Separated</option></select>
+            </div>
+            <div class="fg"><label>Age</label><input type="number" id="age" placeholder="28" min="1" max="120"></div>
+            <div class="fg"><label>Birth Place</label><input type="text" id="birthPlace" placeholder="City, Country"></div>
+            <div class="fg full"><label>Religion</label><input type="text" id="religion" placeholder="e.g. Roman Catholic"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CONTACT & SOCIAL -->
+      <div class="section-accordion">
+        <div class="acc-header" onclick="toggleAcc(this)">
+          <div class="acc-header-left"><div class="acc-num">02</div><div class="acc-title-t">Contact & Social Links</div></div>
+          <span class="acc-chevron">▾</span>
+        </div>
+        <div class="acc-body">
+          <div class="form-grid">
+            <div class="fg"><label>Phone 1 *</label><input type="tel" id="phone1" placeholder="+1 234 567 890" oninput="validateField(this)"><div class="err-msg" id="err-phone1">Required</div></div>
+            <div class="fg"><label>Phone 2 (optional)</label><input type="tel" id="phone2" placeholder="+1 234 567 891"></div>
+            <div class="fg"><label>Email *</label><input type="email" id="email" placeholder="john@example.com" oninput="validateEmail(this)"><div class="err-msg" id="err-email">Valid email required</div></div>
+            <div class="fg"><label>Website</label><input type="text" id="website" placeholder="www.johndoe.com"></div>
+            <div class="fg full"><label>Address</label><input type="text" id="address" placeholder="123 Street, City, State"></div>
+          </div>
+          <div style="margin-top:4px">
+            <label style="margin-bottom:10px;display:block;">Social Profiles</label>
+            <div id="socialList">
+              <div class="social-row">
+                <select class="soc-platform"><option value="linkedin">LinkedIn</option><option value="github">GitHub</option><option value="portfolio">Portfolio</option><option value="behance">Behance</option><option value="dribbble">Dribbble</option><option value="facebook">Facebook</option><option value="twitter">Twitter/X</option><option value="instagram">Instagram</option><option value="youtube">YouTube</option><option value="other">Other</option></select>
+                <input type="text" placeholder="https://..." class="soc-url">
+                <button type="button" class="btn-rm" onclick="rmItem(this,'socialList')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+              </div>
+            </div>
+            <button type="button" class="btn-add-txt" onclick="addSocial()">+ Add Social Link</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- EDUCATION -->
+      <div class="section-accordion">
+        <div class="acc-header" onclick="toggleAcc(this)">
+          <div class="acc-header-left"><div class="acc-num">03</div><div class="acc-title-t">Education</div></div>
+          <span class="acc-chevron">▾</span>
+        </div>
+        <div class="acc-body">
+          <div class="dlist" id="eduList">
+            <div class="item-row">
+              <div class="fields">
+                <input type="text" placeholder="Degree Name" class="edu-degree">
+                <input type="text" placeholder="Year (e.g. 2010–2014)" class="edu-year">
+                <input type="text" placeholder="Institution" class="edu-inst s2">
+                <textarea placeholder="Description..." class="edu-desc s2" style="min-height:52px"></textarea>
+              </div>
+              <button type="button" class="btn-rm" onclick="rmItem(this,'eduList')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+            </div>
+          </div>
+          <button type="button" class="btn-add-txt" onclick="addEdu()">+ Add Education</button>
+        </div>
+      </div>
+
+      <!-- WORK EXPERIENCE -->
+      <div class="section-accordion">
+        <div class="acc-header" onclick="toggleAcc(this)">
+          <div class="acc-header-left"><div class="acc-num">04</div><div class="acc-title-t">Work Experience</div></div>
+          <span class="acc-chevron">▾</span>
+        </div>
+        <div class="acc-body">
+          <div class="dlist" id="workList">
+            <div class="item-row">
+              <div class="fields">
+                <input type="text" placeholder="Job Title" class="work-title">
+                <input type="text" placeholder="Company" class="work-company">
+                <input type="text" placeholder="Years (e.g. 2019–2022)" class="work-year s2">
+                <textarea placeholder="Key responsibilities and achievements..." class="work-desc s2" style="min-height:52px"></textarea>
+              </div>
+              <button type="button" class="btn-rm" onclick="rmItem(this,'workList')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+            </div>
+          </div>
+          <button type="button" class="btn-add-txt" onclick="addWork()">+ Add Experience</button>
+        </div>
+      </div>
+
+      <!-- PROJECTS -->
+      <div class="section-accordion">
+        <div class="acc-header" onclick="toggleAcc(this)">
+          <div class="acc-header-left"><div class="acc-num">05</div><div class="acc-title-t">Projects</div><span class="acc-tag opt">Optional</span></div>
+          <span class="acc-chevron">▾</span>
+        </div>
+        <div class="acc-body">
+          <div class="dlist" id="projList">
+            <div class="item-row">
+              <div class="proj-fields">
+                <input type="text" placeholder="Project Title" class="proj-title s2">
+                <input type="text" placeholder="Technologies Used (e.g. HTML, React, Node)" class="proj-tech s2">
+                <textarea placeholder="Brief description of the project..." class="proj-desc s2" style="min-height:52px"></textarea>
+                <input type="text" placeholder="Project Link (optional)" class="proj-link s2">
+              </div>
+              <button type="button" class="btn-rm" onclick="rmItem(this,'projList')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+            </div>
+          </div>
+          <button type="button" class="btn-add-txt" onclick="addProj()">+ Add Project</button>
+        </div>
+      </div>
+
+      <!-- CERTIFICATIONS -->
+      <div class="section-accordion">
+        <div class="acc-header" onclick="toggleAcc(this)">
+          <div class="acc-header-left"><div class="acc-num">06</div><div class="acc-title-t">Certifications</div><span class="acc-tag opt">Optional</span></div>
+          <span class="acc-chevron">▾</span>
+        </div>
+        <div class="acc-body">
+          <div class="dlist" id="certList">
+            <div class="item-row">
+              <div class="cert-fields">
+                <div class="cert-img-drop s2" onclick="triggerCertImg(this)">
+                  <input type="file" accept="image/*" class="cert-img-input" onchange="prevCertImg(this)" style="display:none">
+                  <img class="cert-preview" alt="" style="display:none">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#555" stroke-width="1.4" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                  <span class="ph-hint">Click to upload certificate image</span>
+                </div>
+                <input type="text" placeholder="Certificate Title" class="cert-title s2">
+                <textarea placeholder="Short description..." class="cert-desc s2" style="min-height:48px"></textarea>
+                <div style="display:flex;flex-direction:column;gap:4px"><label style="margin-bottom:3px">Date Start</label><input type="date" class="cert-start"></div>
+                <div style="display:flex;flex-direction:column;gap:4px"><label style="margin-bottom:3px">Date End / Expiry</label><input type="date" class="cert-end"></div>
+              </div>
+              <button type="button" class="btn-rm" onclick="rmItem(this,'certList')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+            </div>
+          </div>
+          <button type="button" class="btn-add-txt" onclick="addCert()">+ Add Certification</button>
+        </div>
+      </div>
+
+      <!-- ACHIEVEMENTS / AWARDS -->
+      <div class="section-accordion">
+        <div class="acc-header" onclick="toggleAcc(this)">
+          <div class="acc-header-left"><div class="acc-num">07</div><div class="acc-title-t">Achievements & Awards</div><span class="acc-tag opt">Optional</span></div>
+          <span class="acc-chevron">▾</span>
+        </div>
+        <div class="acc-body">
+          <div class="dlist" id="awardList">
+            <div class="item-row">
+              <div class="fields">
+                <input type="text" placeholder="Award / Achievement Name" class="award-name s2">
+                <input type="text" placeholder="Year" class="award-year">
+                <input type="text" placeholder="Issued by / Organization" class="award-org">
+                <textarea placeholder="Brief description..." class="award-desc s2" style="min-height:48px"></textarea>
+              </div>
+              <button type="button" class="btn-rm" onclick="rmItem(this,'awardList')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+            </div>
+          </div>
+          <button type="button" class="btn-add-txt" onclick="addAward()">+ Add Achievement</button>
+        </div>
+      </div>
+
+      <!-- TRAININGS / SEMINARS -->
+      <div class="section-accordion">
+        <div class="acc-header" onclick="toggleAcc(this)">
+          <div class="acc-header-left"><div class="acc-num">08</div><div class="acc-title-t">Trainings & Seminars</div><span class="acc-tag opt">Optional</span></div>
+          <span class="acc-chevron">▾</span>
+        </div>
+        <div class="acc-body">
+          <div class="dlist" id="trainingList">
+            <div class="item-row">
+              <div class="fields">
+                <input type="text" placeholder="Seminar / Training Title" class="train-title s2">
+                <input type="text" placeholder="Organizer / Institution" class="train-org">
+                <input type="date" class="train-date">
+                <textarea placeholder="Notes (optional)..." class="train-desc s2" style="min-height:44px"></textarea>
+              </div>
+              <button type="button" class="btn-rm" onclick="rmItem(this,'trainingList')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+            </div>
+          </div>
+          <button type="button" class="btn-add-txt" onclick="addTraining()">+ Add Training</button>
+        </div>
+      </div>
+
+      <!-- SKILLS -->
+      <div class="section-accordion">
+        <div class="acc-header" onclick="toggleAcc(this)">
+          <div class="acc-header-left"><div class="acc-num">09</div><div class="acc-title-t">Skills & Languages</div></div>
+          <span class="acc-chevron">▾</span>
+        </div>
+        <div class="acc-body">
+          <div class="form-grid">
+            <div class="fg">
+              <label>Software / Technical Skills</label>
+              <div class="dlist" id="softList">
+                <div class="skill-row">
+                  <input type="text" placeholder="e.g. Photoshop" class="sk-name">
+                  <select class="sk-level"><option value="90">Expert</option><option value="75" selected>Good</option><option value="55">Basic</option><option value="40">Learning</option></select>
+                  <button type="button" class="btn-rm" onclick="rmItem(this,'softList')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+                </div>
+              </div>
+              <button type="button" class="btn-add-txt" onclick="addSkill('softList')">+ Add</button>
+            </div>
+            <div class="fg">
+              <label>Interpersonal Skills</label>
+              <div class="dlist" id="interList">
+                <div class="skill-row">
+                  <input type="text" placeholder="e.g. Communication" class="sk-name">
+                  <select class="sk-level"><option value="90">Expert</option><option value="75" selected>Good</option><option value="55">Basic</option><option value="40">Learning</option></select>
+                  <button type="button" class="btn-rm" onclick="rmItem(this,'interList')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+                </div>
+              </div>
+              <button type="button" class="btn-add-txt" onclick="addSkill('interList')">+ Add</button>
+            </div>
+            <div class="fg full">
+              <label>Languages</label>
+              <div class="dlist" id="langList">
+                <div class="skill-row">
+                  <input type="text" placeholder="e.g. English" class="sk-name">
+                  <select class="sk-level"><option value="100">Native</option><option value="80" selected>Fluent</option><option value="60">Intermediate</option><option value="40">Basic</option></select>
+                  <button type="button" class="btn-rm" onclick="rmItem(this,'langList')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+                </div>
+              </div>
+              <button type="button" class="btn-add-txt" onclick="addSkill('langList')">+ Add Language</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- HOBBIES -->
+      <div class="section-accordion">
+        <div class="acc-header" onclick="toggleAcc(this)">
+          <div class="acc-header-left"><div class="acc-num">10</div><div class="acc-title-t">Hobbies & Interests</div><span class="acc-tag opt">Optional</span></div>
+          <span class="acc-chevron">▾</span>
+        </div>
+        <div class="acc-body">
+          <div class="fg full" style="margin:0">
+            <label>Interests (comma-separated or one per line)</label>
+            <textarea id="hobbies" placeholder="e.g. Photography, Gaming, UI Design, Public Speaking, Reading" style="min-height:72px"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- REFERENCES -->
+      <div class="section-accordion">
+        <div class="acc-header" onclick="toggleAcc(this)">
+          <div class="acc-header-left"><div class="acc-num">11</div><div class="acc-title-t">References</div><span class="acc-tag opt">Optional</span></div>
+          <span class="acc-chevron">▾</span>
+        </div>
+        <div class="acc-body">
+          <div class="dlist" id="refList">
+            <div class="item-row">
+              <div class="fields">
+                <input type="text" placeholder="Full Name" class="ref-name s2">
+                <input type="text" placeholder="Title / Bio" class="ref-bio">
+                <input type="tel" placeholder="Phone" class="ref-phone">
+                <input type="email" placeholder="Email" class="ref-email">
+                <input type="text" placeholder="Address" class="ref-addr s2">
+              </div>
+              <button type="button" class="btn-rm" onclick="rmItem(this,'refList')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+            </div>
+          </div>
+          <button type="button" class="btn-add-txt" onclick="addRef()">+ Add Reference</button>
+        </div>
+      </div>
+
+    </div>
+
+    <button type="submit" class="gen-btn">Generate &amp; Open Resume →</button>
+    <div class="bottom-btns">
+      <button type="button" class="outline-btn" onclick="downloadJSON()">⬇ Save as JSON</button>
+      <button type="button" class="outline-btn danger" onclick="clearData()">✕ Clear All Data</button>
+    </div>
+  </form>
+
+</div>
+
+<script>
+let tpl = 1;
+let photo = null;
+let saveTimer = null;
+let themeColor = '#c9a96e';
+let themeFont = 'Playfair Display';
+
+const XBTN = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
+const xsvg = id => `<button type="button" class="btn-rm" onclick="rmItem(this,'${id}')">${XBTN}</button>`;
+
+function toggleAcc(header){
+  const body = header.nextElementSibling;
+  const chevron = header.querySelector('.acc-chevron');
+  const isOpen = body.classList.contains('open');
+  body.classList.toggle('open', !isOpen);
+  chevron.classList.toggle('open', !isOpen);
+}
+
+function toggleMode(){
+  const light = document.body.classList.toggle('light');
+  document.getElementById('modeToggle').textContent = light ? 'Dark Mode' : 'Light Mode';
+  scheduleSave();
+}
+
+function setColor(el){
+  themeColor = el.dataset.color;
+  document.querySelectorAll('.swatch').forEach(s=>s.classList.remove('active'));
+  el.classList.add('active');
+  document.documentElement.style.setProperty('--accent', themeColor);
+  document.documentElement.style.setProperty('--accent-dim', themeColor+'22');
+  scheduleSave();
+}
+
+function setFont(el){
+  themeFont = el.dataset.font;
+  document.querySelectorAll('.font-opt').forEach(f=>f.classList.remove('active'));
+  el.classList.add('active');
+  const existingLink = document.getElementById('dynamic-font-link');
+  if(existingLink) existingLink.remove();
+  const l = document.createElement('link');
+  l.id = 'dynamic-font-link';
+  l.rel = 'stylesheet';
+  l.href = `https://fonts.googleapis.com/css2?family=${themeFont.replace(/ /g,'+')}:wght@300;400;500;600;700&display=swap`;
+  document.head.appendChild(l);
+  document.body.style.fontFamily = `'${themeFont}', sans-serif`;
+  scheduleSave();
+}
+
+function selTpl(n){
+  tpl = n;
+  ['card1','card2'].forEach((id,i)=>{
+    const c = document.getElementById(id);
+    c.classList.toggle('active', n===i+1);
+    c.querySelector('.t-badge').textContent = n===i+1 ? 'Selected' : 'Select';
+  });
+  scheduleSave();
+}
+
+function prevPhoto(inp){
+  if(!inp.files[0]) return;
+  if(inp.files[0].size > 2*1024*1024){ alert('Photo must be under 2MB.'); return; }
+  const r = new FileReader();
+  r.onload = e => {
+    photo = e.target.result;
+    const img = document.getElementById('photo-preview');
+    img.src = photo; img.style.display = 'block';
+    document.getElementById('ph-icon').style.display = 'none';
+    document.getElementById('ph-hint').style.display = 'none';
+    scheduleSave();
+  };
+  r.readAsDataURL(inp.files[0]);
+}
+
+function triggerCertImg(drop){ drop.querySelector('.cert-img-input').click(); }
+
+function prevCertImg(inp){
+  if(!inp.files[0]) return;
+  const r = new FileReader();
+  r.onload = e => {
+    const drop = inp.closest('.cert-img-drop');
+    const prev = drop.querySelector('.cert-preview');
+    prev.src = e.target.result; prev.style.display = 'block';
+    drop.querySelector('svg').style.display = 'none';
+    drop.querySelector('.ph-hint').style.display = 'none';
+    scheduleSave();
+  };
+  r.readAsDataURL(inp.files[0]);
+}
+
+function rmItem(btn, id){
+  const row = btn.closest('.item-row') || btn.closest('.skill-row') || btn.closest('.social-row');
+  const l = document.getElementById(id);
+  if(l.children.length > 1){ row.remove(); scheduleSave(); }
+}
+
+function addEdu(){
+  const l=document.getElementById('eduList'), d=document.createElement('div');
+  d.className='item-row';
+  d.innerHTML=`<div class="fields"><input type="text" placeholder="Degree Name" class="edu-degree"><input type="text" placeholder="Year (e.g. 2010–2014)" class="edu-year"><input type="text" placeholder="Institution" class="edu-inst s2"><textarea placeholder="Description..." class="edu-desc s2" style="min-height:52px"></textarea></div>${xsvg('eduList')}`;
+  l.appendChild(d); attachListeners(d);
+}
+
+function addWork(){
+  const l=document.getElementById('workList'), d=document.createElement('div');
+  d.className='item-row';
+  d.innerHTML=`<div class="fields"><input type="text" placeholder="Job Title" class="work-title"><input type="text" placeholder="Company" class="work-company"><input type="text" placeholder="Years (e.g. 2019–2022)" class="work-year s2"><textarea placeholder="Key responsibilities..." class="work-desc s2" style="min-height:52px"></textarea></div>${xsvg('workList')}`;
+  l.appendChild(d); attachListeners(d);
+}
+
+function addProj(){
+  const l=document.getElementById('projList'), d=document.createElement('div');
+  d.className='item-row';
+  d.innerHTML=`<div class="proj-fields"><input type="text" placeholder="Project Title" class="proj-title s2"><input type="text" placeholder="Technologies Used" class="proj-tech s2"><textarea placeholder="Brief description..." class="proj-desc s2" style="min-height:52px"></textarea><input type="text" placeholder="Project Link (optional)" class="proj-link s2"></div>${xsvg('projList')}`;
+  l.appendChild(d); attachListeners(d);
+}
+
+function addCert(){
+  const l=document.getElementById('certList'), d=document.createElement('div');
+  d.className='item-row';
+  d.innerHTML=`<div class="cert-fields"><div class="cert-img-drop s2" onclick="triggerCertImg(this)"><input type="file" accept="image/*" class="cert-img-input" onchange="prevCertImg(this)" style="display:none"><img class="cert-preview" alt="" style="display:none"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#555" stroke-width="1.4" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg><span class="ph-hint">Click to upload certificate image</span></div><input type="text" placeholder="Certificate Title" class="cert-title s2"><textarea placeholder="Short description..." class="cert-desc s2" style="min-height:48px"></textarea><div style="display:flex;flex-direction:column;gap:4px"><label style="margin-bottom:3px">Date Start</label><input type="date" class="cert-start"></div><div style="display:flex;flex-direction:column;gap:4px"><label style="margin-bottom:3px">Date End / Expiry</label><input type="date" class="cert-end"></div></div>${xsvg('certList')}`;
+  l.appendChild(d); attachListeners(d);
+}
+
+function addAward(){
+  const l=document.getElementById('awardList'), d=document.createElement('div');
+  d.className='item-row';
+  d.innerHTML=`<div class="fields"><input type="text" placeholder="Award / Achievement Name" class="award-name s2"><input type="text" placeholder="Year" class="award-year"><input type="text" placeholder="Issued by / Organization" class="award-org"><textarea placeholder="Brief description..." class="award-desc s2" style="min-height:48px"></textarea></div>${xsvg('awardList')}`;
+  l.appendChild(d); attachListeners(d);
+}
+
+function addTraining(){
+  const l=document.getElementById('trainingList'), d=document.createElement('div');
+  d.className='item-row';
+  d.innerHTML=`<div class="fields"><input type="text" placeholder="Seminar / Training Title" class="train-title s2"><input type="text" placeholder="Organizer / Institution" class="train-org"><input type="date" class="train-date"><textarea placeholder="Notes (optional)..." class="train-desc s2" style="min-height:44px"></textarea></div>${xsvg('trainingList')}`;
+  l.appendChild(d); attachListeners(d);
+}
+
+function addSkill(lid){
+  const l=document.getElementById(lid), d=document.createElement('div');
+  d.className='skill-row';
+  const isLang=lid==='langList';
+  d.innerHTML=`<input type="text" placeholder="Skill name" class="sk-name"><select class="sk-level">${isLang?'<option value="100">Native</option><option value="80" selected>Fluent</option><option value="60">Intermediate</option><option value="40">Basic</option>':'<option value="90">Expert</option><option value="75" selected>Good</option><option value="55">Basic</option><option value="40">Learning</option>'}</select>${xsvg(lid)}`;
+  l.appendChild(d); attachListeners(d);
+}
+
+function addSocial(){
+  const l=document.getElementById('socialList'), d=document.createElement('div');
+  d.className='social-row';
+  d.innerHTML=`<select class="soc-platform"><option value="linkedin">LinkedIn</option><option value="github">GitHub</option><option value="portfolio">Portfolio</option><option value="behance">Behance</option><option value="dribbble">Dribbble</option><option value="facebook">Facebook</option><option value="twitter">Twitter/X</option><option value="instagram">Instagram</option><option value="youtube">YouTube</option><option value="other">Other</option></select><input type="text" placeholder="https://..." class="soc-url">${xsvg('socialList')}`;
+  l.appendChild(d); attachListeners(d);
+}
+
+function addRef(){
+  const l=document.getElementById('refList'), d=document.createElement('div');
+  d.className='item-row';
+  d.innerHTML=`<div class="fields"><input type="text" placeholder="Full Name" class="ref-name s2"><input type="text" placeholder="Title / Bio" class="ref-bio"><input type="tel" placeholder="Phone" class="ref-phone"><input type="email" placeholder="Email" class="ref-email"><input type="text" placeholder="Address" class="ref-addr s2"></div>${xsvg('refList')}`;
+  l.appendChild(d); attachListeners(d);
+}
+
+function validateField(el){
+  const empty = !el.value.trim();
+  el.classList.toggle('error', empty);
+  const err = document.getElementById('err-'+el.id);
+  if(err) err.classList.toggle('show', empty);
+  return !empty;
+}
+function validateEmail(el){
+  const val = el.value.trim();
+  const empty = val === '';
+  const valid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val);
+  const showErr = empty || !valid;
+  el.classList.toggle('error', showErr);
+  const err = document.getElementById('err-email');
+  if(err) err.classList.toggle('show', showErr);
+  return valid && !empty;
+}
+function validateAll(){
+  let ok = true;
+  ['firstName','lastName','jobTitle','phone1'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(!validateField(el)) ok = false;
+  });
+  const emailEl = document.getElementById('email');
+  if(!validateEmail(emailEl)) ok = false;
+  return ok;
+}
+
+function updateProgress(){
+  const fields = ['firstName','lastName','jobTitle','email','phone1','profile','address'];
+  let filled = 0;
+  fields.forEach(id=>{ if(document.getElementById(id)?.value.trim()) filled++; });
+  if(document.querySelector('.edu-degree')?.value) filled++;
+  if(document.querySelector('.work-title')?.value) filled++;
+  if(document.querySelector('.sk-name')?.value) filled++;
+  const pct = Math.min(100, Math.round((filled / (fields.length+3))*100));
+  document.getElementById('progressBar').style.width = pct+'%';
+  document.getElementById('progressPct').textContent = pct+'%';
+}
+
+function attachListeners(root){
+  root.querySelectorAll('input,textarea,select').forEach(el=>{
+    el.addEventListener('input', scheduleSave);
+    el.addEventListener('change', scheduleSave);
+  });
+}
+
+function scheduleSave(){
+  clearTimeout(saveTimer);
+  updateProgress();
+  const ind = document.getElementById('saveIndicator');
+  ind.textContent = '● Saving…'; ind.className = 'save-indicator';
+  saveTimer = setTimeout(()=>{
+    saveToStorage();
+    ind.textContent = '● Saved'; ind.className = 'save-indicator saved';
+    setTimeout(()=>{ ind.textContent = '● Auto-saved'; }, 1800);
+  }, 600);
+}
+
+function collect(){
+  const certRows = [...document.querySelectorAll('#certList .item-row')];
+  const certData = certRows.map(r=>{
+    const imgEl = r.querySelector('.cert-preview');
+    return { img:(imgEl&&imgEl.style.display!=='none'&&imgEl.src)?imgEl.src:'', title:r.querySelector('.cert-title')?.value||'', desc:r.querySelector('.cert-desc')?.value||'', start:r.querySelector('.cert-start')?.value||'', end:r.querySelector('.cert-end')?.value||'' };
+  });
+  return {
+    tpl, themeColor, themeFont,
+    lightMode: document.body.classList.contains('light'),
+    firstName:  document.getElementById('firstName').value,
+    lastName:   document.getElementById('lastName').value,
+    jobTitle:   document.getElementById('jobTitle').value,
+    profile:    document.getElementById('profile').value,
+    objective:  document.getElementById('objective').value,
+    gender:     document.getElementById('gender').value,
+    civilStatus:document.getElementById('civilStatus').value,
+    age:        document.getElementById('age').value,
+    birthPlace: document.getElementById('birthPlace').value,
+    religion:   document.getElementById('religion').value,
+    phone1:     document.getElementById('phone1').value,
+    phone2:     document.getElementById('phone2').value,
+    email:      document.getElementById('email').value,
+    website:    document.getElementById('website').value,
+    address:    document.getElementById('address').value,
+    hobbies:    document.getElementById('hobbies').value,
+    photo,
+    social: [...document.querySelectorAll('#socialList .social-row')].map(r=>({ platform:r.querySelector('.soc-platform')?.value||'', url:r.querySelector('.soc-url')?.value||'' })),
+    education: [...document.querySelectorAll('#eduList .item-row')].map(r=>({ degree:r.querySelector('.edu-degree')?.value||'', year:r.querySelector('.edu-year')?.value||'', inst:r.querySelector('.edu-inst')?.value||'', desc:r.querySelector('.edu-desc')?.value||'' })),
+    work: [...document.querySelectorAll('#workList .item-row')].map(r=>({ title:r.querySelector('.work-title')?.value||'', company:r.querySelector('.work-company')?.value||'', year:r.querySelector('.work-year')?.value||'', desc:r.querySelector('.work-desc')?.value||'' })),
+    projects: [...document.querySelectorAll('#projList .item-row')].map(r=>({ title:r.querySelector('.proj-title')?.value||'', tech:r.querySelector('.proj-tech')?.value||'', desc:r.querySelector('.proj-desc')?.value||'', link:r.querySelector('.proj-link')?.value||'' })),
+    certifications: certData,
+    awards: [...document.querySelectorAll('#awardList .item-row')].map(r=>({ name:r.querySelector('.award-name')?.value||'', year:r.querySelector('.award-year')?.value||'', org:r.querySelector('.award-org')?.value||'', desc:r.querySelector('.award-desc')?.value||'' })),
+    trainings: [...document.querySelectorAll('#trainingList .item-row')].map(r=>({ title:r.querySelector('.train-title')?.value||'', org:r.querySelector('.train-org')?.value||'', date:r.querySelector('.train-date')?.value||'', desc:r.querySelector('.train-desc')?.value||'' })),
+    software: [...document.querySelectorAll('#softList .skill-row')].map(r=>({ name:r.querySelector('.sk-name')?.value||'', level:r.querySelector('.sk-level')?.value||'75' })),
+    interpersonal: [...document.querySelectorAll('#interList .skill-row')].map(r=>({ name:r.querySelector('.sk-name')?.value||'', level:r.querySelector('.sk-level')?.value||'75' })),
+    languages: [...document.querySelectorAll('#langList .skill-row')].map(r=>({ name:r.querySelector('.sk-name')?.value||'', level:r.querySelector('.sk-level')?.value||'75' })),
+    references: [...document.querySelectorAll('#refList .item-row')].map(r=>({ name:r.querySelector('.ref-name')?.value||'', bio:r.querySelector('.ref-bio')?.value||'', phone:r.querySelector('.ref-phone')?.value||'', email:r.querySelector('.ref-email')?.value||'', addr:r.querySelector('.ref-addr')?.value||'' }))
+  };
+}
+
+function saveToStorage(){
+  try{ localStorage.setItem('resumeData', JSON.stringify(collect())); }catch(e){}
+}
+
+function downloadJSON(){
+  const data = collect();
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'resume-data.json';
+  a.click();
+}
+
+function loadJSON(inp){
+  if(!inp.files[0]) return;
+  const r = new FileReader();
+  r.onload = e => {
+    try{
+      const d = JSON.parse(e.target.result);
+      localStorage.setItem('resumeData', JSON.stringify(d));
+      restoreFromStorage(d);
+      alert('Resume data loaded!');
+    }catch(err){ alert('Invalid JSON file.'); }
+  };
+  r.readAsText(inp.files[0]);
+  inp.value='';
+}
+
+function esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function restoreFromStorage(d){
+  if(!d){
+    try{ d = JSON.parse(localStorage.getItem('resumeData')||'null'); }catch(e){}
+    if(!d) return;
+  }
+
+  if(d.tpl) selTpl(d.tpl);
+  if(d.lightMode) document.body.classList.add('light'), document.getElementById('modeToggle').textContent='Dark Mode';
+
+  if(d.themeColor){
+    themeColor = d.themeColor;
+    document.documentElement.style.setProperty('--accent', themeColor);
+    document.documentElement.style.setProperty('--accent-dim', themeColor+'22');
+    document.querySelectorAll('.swatch').forEach(s=>{s.classList.remove('active'); if(s.dataset.color===themeColor) s.classList.add('active');});
+  }
+  if(d.themeFont){
+    themeFont = d.themeFont;
+    document.querySelectorAll('.font-opt').forEach(f=>{f.classList.remove('active'); if(f.dataset.font===themeFont) f.classList.add('active');});
+    const l = document.createElement('link');
+    l.rel = 'stylesheet';
+    l.href = `https://fonts.googleapis.com/css2?family=${themeFont.replace(/ /g,'+')}:wght@300;400;500;600;700&display=swap`;
+    document.head.appendChild(l);
+    document.body.style.fontFamily = `'${themeFont}', sans-serif`;
+  }
+
+  const simpleIds = ['firstName','lastName','jobTitle','profile','objective','gender','civilStatus','age','birthPlace','religion','phone1','phone2','email','website','address','hobbies'];
+  simpleIds.forEach(id=>{ const el=document.getElementById(id); if(el&&d[id]) el.value=d[id]; });
+
+  if(d.photo){
+    photo = d.photo;
+    const img=document.getElementById('photo-preview');
+    img.src=photo; img.style.display='block';
+    document.getElementById('ph-icon').style.display='none';
+    document.getElementById('ph-hint').style.display='none';
+  }
+
+  restoreList('socialList', d.social, r=>`<div class="social-row"><select class="soc-platform"><option value="linkedin"${r.platform==='linkedin'?' selected':''}>LinkedIn</option><option value="github"${r.platform==='github'?' selected':''}>GitHub</option><option value="portfolio"${r.platform==='portfolio'?' selected':''}>Portfolio</option><option value="behance"${r.platform==='behance'?' selected':''}>Behance</option><option value="dribbble"${r.platform==='dribbble'?' selected':''}>Dribbble</option><option value="facebook"${r.platform==='facebook'?' selected':''}>Facebook</option><option value="twitter"${r.platform==='twitter'?' selected':''}>Twitter/X</option><option value="instagram"${r.platform==='instagram'?' selected':''}>Instagram</option><option value="youtube"${r.platform==='youtube'?' selected':''}>YouTube</option><option value="other"${r.platform==='other'?' selected':''}>Other</option></select><input type="text" placeholder="https://..." class="soc-url" value="${esc(r.url)}">${xsvg('socialList')}</div>`);
+
+  restoreList('eduList', d.education, e=>`<div class="item-row"><div class="fields"><input type="text" placeholder="Degree Name" class="edu-degree" value="${esc(e.degree)}"><input type="text" placeholder="Year" class="edu-year" value="${esc(e.year)}"><input type="text" placeholder="Institution" class="edu-inst s2" value="${esc(e.inst)}"><textarea placeholder="Description..." class="edu-desc s2" style="min-height:52px">${esc(e.desc)}</textarea></div>${xsvg('eduList')}</div>`);
+
+  restoreList('workList', d.work, w=>`<div class="item-row"><div class="fields"><input type="text" placeholder="Job Title" class="work-title" value="${esc(w.title)}"><input type="text" placeholder="Company" class="work-company" value="${esc(w.company||'')}"><input type="text" placeholder="Years" class="work-year s2" value="${esc(w.year)}"><textarea placeholder="Description..." class="work-desc s2" style="min-height:52px">${esc(w.desc)}</textarea></div>${xsvg('workList')}</div>`);
+
+  restoreList('projList', d.projects, p=>`<div class="item-row"><div class="proj-fields"><input type="text" placeholder="Project Title" class="proj-title s2" value="${esc(p.title)}"><input type="text" placeholder="Technologies Used" class="proj-tech s2" value="${esc(p.tech)}"><textarea placeholder="Description..." class="proj-desc s2" style="min-height:52px">${esc(p.desc)}</textarea><input type="text" placeholder="Project Link" class="proj-link s2" value="${esc(p.link)}"></div>${xsvg('projList')}</div>`);
+
+  if(d.certifications && d.certifications.length){
+    const certList = document.getElementById('certList');
+    certList.innerHTML='';
+    d.certifications.forEach(c=>{
+      const div=document.createElement('div');
+      div.className='item-row';
+      div.innerHTML=`<div class="cert-fields"><div class="cert-img-drop s2" onclick="triggerCertImg(this)"><input type="file" accept="image/*" class="cert-img-input" onchange="prevCertImg(this)" style="display:none"><img class="cert-preview" alt="" ${c.img?`src="${c.img}" style="display:block"`:'style="display:none"'}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#555" stroke-width="1.4" stroke-linecap="round" ${c.img?'style="display:none"':''}><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg><span class="ph-hint" ${c.img?'style="display:none"':''}>Click to upload certificate image</span></div><input type="text" placeholder="Certificate Title" class="cert-title s2" value="${esc(c.title)}"><textarea placeholder="Short description..." class="cert-desc s2" style="min-height:48px">${esc(c.desc)}</textarea><div style="display:flex;flex-direction:column;gap:4px"><label style="margin-bottom:3px">Date Start</label><input type="date" class="cert-start" value="${esc(c.start)}"></div><div style="display:flex;flex-direction:column;gap:4px"><label style="margin-bottom:3px">Date End / Expiry</label><input type="date" class="cert-end" value="${esc(c.end)}"></div></div>${xsvg('certList')}`;
+      certList.appendChild(div); attachListeners(div);
+    });
+  }
+
+  restoreList('awardList', d.awards, a=>`<div class="item-row"><div class="fields"><input type="text" placeholder="Award Name" class="award-name s2" value="${esc(a.name)}"><input type="text" placeholder="Year" class="award-year" value="${esc(a.year)}"><input type="text" placeholder="Issued by" class="award-org" value="${esc(a.org)}"><textarea placeholder="Description..." class="award-desc s2" style="min-height:48px">${esc(a.desc)}</textarea></div>${xsvg('awardList')}</div>`);
+
+  restoreList('trainingList', d.trainings, t=>`<div class="item-row"><div class="fields"><input type="text" placeholder="Training Title" class="train-title s2" value="${esc(t.title)}"><input type="text" placeholder="Organizer" class="train-org" value="${esc(t.org)}"><input type="date" class="train-date" value="${esc(t.date)}"><textarea placeholder="Notes..." class="train-desc s2" style="min-height:44px">${esc(t.desc)}</textarea></div>${xsvg('trainingList')}</div>`);
+
+  restoreSkillList('softList', d.software, false);
+  restoreSkillList('interList', d.interpersonal, false);
+  restoreSkillList('langList', d.languages, true);
+
+  restoreList('refList', d.references, r=>`<div class="item-row"><div class="fields"><input type="text" placeholder="Full Name" class="ref-name s2" value="${esc(r.name)}"><input type="text" placeholder="Title / Bio" class="ref-bio" value="${esc(r.bio)}"><input type="tel" placeholder="Phone" class="ref-phone" value="${esc(r.phone)}"><input type="email" placeholder="Email" class="ref-email" value="${esc(r.email)}"><input type="text" placeholder="Address" class="ref-addr s2" value="${esc(r.addr)}"></div>${xsvg('refList')}</div>`);
+
+  updateProgress();
+}
+
+function restoreList(listId, items, tplFn){
+  if(!items || !items.length) return;
+  const list = document.getElementById(listId);
+  list.innerHTML = '';
+  items.forEach(item=>{
+    const tmp = document.createElement('div');
+    tmp.innerHTML = tplFn(item);
+    const el = tmp.firstElementChild;
+    list.appendChild(el); attachListeners(el);
+  });
+}
+
+function restoreSkillList(listId, items, isLang){
+  if(!items || !items.length) return;
+  const list = document.getElementById(listId);
+  list.innerHTML = '';
+  items.forEach(s=>{
+    const d = document.createElement('div');
+    d.className = 'skill-row';
+    const opts = isLang
+      ? `<option value="100"${s.level=='100'?' selected':''}>Native</option><option value="80"${s.level=='80'?' selected':''}>Fluent</option><option value="60"${s.level=='60'?' selected':''}>Intermediate</option><option value="40"${s.level=='40'?' selected':''}>Basic</option>`
+      : `<option value="90"${s.level=='90'?' selected':''}>Expert</option><option value="75"${s.level=='75'?' selected':''}>Good</option><option value="55"${s.level=='55'?' selected':''}>Basic</option><option value="40"${s.level=='40'?' selected':''}>Learning</option>`;
+    d.innerHTML = `<input type="text" placeholder="Skill name" class="sk-name" value="${esc(s.name)}"><select class="sk-level">${opts}</select>${xsvg(listId)}`;
+    list.appendChild(d); attachListeners(d);
+  });
+}
+
+function generate(e){
+  e.preventDefault();
+  const banner = document.getElementById('val-banner');
+  if(!validateAll()){
+    banner.classList.add('show');
+    banner.scrollIntoView({behavior:'smooth', block:'center'});
+    return;
+  }
+  banner.classList.remove('show');
+  saveToStorage();
+  const url = tpl===1 ? 'Resume_1.html' : 'Resume_2.html';
+  window.open(url, '_blank');
+}
+
+function clearData(){
+  if(!confirm('Clear all saved data and reset the form?')) return;
+  localStorage.removeItem('resumeData');
+  location.reload();
+}
+
+document.addEventListener('DOMContentLoaded', ()=>{
+  attachListeners(document.getElementById('rForm'));
+  restoreFromStorage();
+  updateProgress();
+});
+</script>
+</body>
+</html>
