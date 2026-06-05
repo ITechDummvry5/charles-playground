@@ -1,97 +1,83 @@
 'use strict';
 
-/* ═══════════════════════════════════════════════════════════════
-   PERFORMANCE REFACTOR — USERMANUAL 2026 Admin Portal
-   Changes from original:
-   1.  _emptySet is now frozen to prevent accidental mutation.
-   2.  ModuleCountCache: O(1) sidebar badge refresh instead of
-       O(notes × subs) full scan on every save.
-   3.  _savedByteSize tracked in-memory; _updateStoragePill no
-       longer re-reads localStorage just to measure size.
-   4.  renderNotes() now does targeted DOM patching for star toggles
-       and connection updates instead of full innerHTML replacement.
-   5.  _fileInputs: DOM elements removed on note delete (memory leak fix).
-   6.  generateFlowchart XSS: fnNodes/fnConns encoded via
-       JSON.stringify with a replacer that escapes </script>.
-   7.  _renderCache: filters/sort result memoized to skip
-       redundant getFiltered+getSorted when inputs haven't changed.
-   8.  Sidebar counts use a single-pass accumulator map.
-   9.  rebuildIndexes also rebuilds the module count cache.
-  10.  All modal inline onclick handlers replaced with data-action
-       delegation to avoid global scope coupling.
-═══════════════════════════════════════════════════════════════ */
-
 const $  = id  => document.getElementById(id);
 const $$ = sel => document.querySelectorAll(sel);
 
 /* ── MODULES (unchanged from original) ────────────────────── */
 const MODS = Object.freeze([
+      {
+    key:'System Administration', label:'System Administration', badge:'Admin', icon:'ti-speedboat',
+    subs:[
+      {key:'Online Payment', label:'Online Payment', icon:'ti ti-credit-card'},
+    ]
+  },
+
   {
     key:'administration', label:'Administration', badge:'Admin', icon:'ti-shield-check',
     subs:[
-      {key:'module_management', label:'Module Management', icon:'ti-layout-sidebar'},
-      {key:'dashboard',         label:'Dashboard',         icon:'ti-layout-dashboard'},
-      {key:'school_info',       label:'School Information',icon:'ti-info-circle'},
       {key:'users',             label:'Users',             icon:'ti-users'},
+      {key:'dashboard',         label:'Dashboard',         icon:'ti-layout-dashboard'},
+      {key:'module_management', label:'Module Management', icon:'ti-layout-sidebar'},
+      {key:'school_info',       label:'School Information',icon:'ti-books'},
+    ]
+  },
+    {
+    key:'notification', label:'Notification', badge:'Notification', icon:'ti-bell',
+    subs:[
+      {key:'chat',           label:'Chat',                   icon:'ti-message'},
+      {key:'chat_mgmt',      label:'Chat Management',        icon:'ti-messages'},
+      {key:'notif_settings', label:'Notification Settings', icon:'ti-settings'},
     ]
   },
   {
-    key:'reports', label:'Reports', badge:'Reports', icon:'ti-chart-bar',
+    key:'reports', label:'Reports', badge:'Reports', icon:'ti-chart-bar',                                   
     subs:[
       {key:'enroll_summary',    label:'Enrollment Summary',         icon:'ti-users',        group:'ENROLLMENT',     groupIcon:'ti-users'},
-      {key:'enroll_stats',      label:'Enrollment Statistics',      icon:'ti-chart-bar'},
-      {key:'daily_enroll',      label:'Daily Enrollment Monitoring',icon:'ti-activity'},
       {key:'subject_enroll',    label:'Subject Enrollment Report',  icon:'ti-book'},
-      {key:'section_block',     label:'Section/Block List',         icon:'ti-layout-grid'},
-      {key:'master_list',       label:'Master List of Students',    icon:'ti-list',         group:'STUDENT REPORTS',groupIcon:'ti-user-check'},
+      {key:'daily_enroll',      label:'Daily Enrollment Monitoring',icon:'ti-activity'},
+      {key:'enroll_stats',      label:'Enrollment Statistics',      icon:'ti-chart-bar'},
+      {key:'acad_history',      label:'Academic History',           icon:'ti-book',         group:'STUDENT REPORTS',groupIcon:'ti-user-check'},
       {key:'student_profile',   label:'Student Profile Report',     icon:'ti-user'},
-      {key:'reg_cor',           label:'Registration Form / COR',    icon:'ti-file-description'},
-      {key:'acad_history',      label:'Academic History',           icon:'ti-book'},
       {key:'deficiency_rpt',    label:'Student Deficiency Report',  icon:'ti-alert-triangle'},
+      {key:'master_list',       label:'Master List of Students',    icon:'ti-list'},
+      {key:'section_block',     label:'Section/Block List',         icon:'ti-layout-grid'},
+      {key:'reg_cor',           label:'Registration Form / COR',    icon:'ti-file-description'},
       {key:'class_list',        label:'Class List',                 icon:'ti-users',        group:'ACADEMIC REPORTS',groupIcon:'ti-school'},
+      {key:'deans_list',        label:"Dean's List",                icon:'ti-award'},
+      {key:'grade_reports',     label:'Grade Reports',              icon:'ti-chart-line'},
       {key:'faculty_loading',   label:'Faculty Loading',            icon:'ti-user-star'},
+      {key:'sched_report',      label:'Schedule Report',            icon:'ti-calendar-event'},
+      {key:'failed_subj',       label:'Failed Subjects',            icon:'ti-alert-triangle'},
       {key:'room_util',         label:'Room Utilization',           icon:'ti-building'},
       {key:'subj_offering',     label:'Subject Offering',           icon:'ti-book-2'},
-      {key:'sched_report',      label:'Schedule Report',            icon:'ti-calendar-event'},
-      {key:'grade_reports',     label:'Grade Reports',              icon:'ti-chart-line'},
-      {key:'deans_list',        label:"Dean's List",                icon:'ti-award'},
-      {key:'failed_subj',       label:'Failed Subjects',            icon:'ti-alert-triangle'},
       {key:'attendance_rpt',    label:'Attendance Report',          icon:'ti-calendar-check'},
-      {key:'assessment_rpt',    label:'Assessment Report',          icon:'ti-file-invoice', group:'FINANCE & ACCOUNTING', groupIcon:'ti-building-bank'},
-      {key:'collection_rpt',    label:'Collection Report',          icon:'ti-building-bank'},
-      {key:'or_monitoring',     label:'OR Monitoring',              icon:'ti-hash'},
-      {key:'accts_receivable',  label:'Accounts Receivable',        icon:'ti-alert-circle'},
-      {key:'scholarship_rpt',   label:'Scholarship Report',         icon:'ti-award'},
+      {key:'or_monitoring',     label:'OR Monitoring',              icon:'ti-hash',         group:'FINANCE & ACCOUNTING', groupIcon:'ti-building-bank'},
+      {key:'assessment_rpt',    label:'Assessment Report',          icon:'ti-file-invoice'},
       {key:'payment_history',   label:'Payment History',            icon:'ti-clock'},
       {key:'refund_rpt',        label:'Refund Report',              icon:'ti-arrow-back'},
+      {key:'scholarship_rpt',   label:'Scholarship Report',         icon:'ti-award'},
       {key:'cashier_eod',       label:'Cashier EOD Report',         icon:'ti-chart-bar'},
-      {key:'transcript_req',    label:'Transcript Request',         icon:'ti-file-description', group:'REGISTRAR REPORTS', groupIcon:'ti-user-check'},
-      {key:'doc_tracking',      label:'Document Tracking',          icon:'ti-files'},
+      {key:'collection_rpt',    label:'Collection Report',          icon:'ti-building-bank'},
+      {key:'accts_receivable',  label:'Accounts Receivable',        icon:'ti-alert-circle'},
+      {key:'doc_tracking',      label:'Document Tracking',          icon:'ti-files',        group:'REGISTRAR REPORTS', groupIcon:'ti-user-check'},
       {key:'student_status',    label:'Student Status',             icon:'ti-user'},
       {key:'adding_dropping',   label:'Adding / Dropping',          icon:'ti-transfer'},
       {key:'cross_enroll',      label:'Cross Enrollment',           icon:'ti-arrows-exchange'},
-      {key:'audit_trail',       label:'Audit Trail',                icon:'ti-activity',     group:'ADMINISTRATIVE REPORTS', groupIcon:'ti-shield'},
-      {key:'user_access',       label:'User Access',                icon:'ti-lock'},
+      {key:'transcript_req',    label:'Transcript Request',         icon:'ti-file-description'},
+      {key:'user_access',       label:'User Access',                icon:'ti-lock',         group:'ADMINISTRATIVE REPORTS', groupIcon:'ti-shield'},
+      {key:'audit_trail',       label:'Audit Trail',                icon:'ti-activity'},
       {key:'system_usage',      label:'System Usage',               icon:'ti-chart-pie'},
-    ]
-  },
-  {
-    key:'notification', label:'Notification', badge:'Notification', icon:'ti-bell',
-    subs:[
-      {key:'notif_settings', label:'Notification Settings', icon:'ti-settings'},
-      {key:'chat_mgmt',      label:'Chat Management',        icon:'ti-messages'},
-      {key:'chat',           label:'Chat',                   icon:'ti-message'},
     ]
   },
   {
     key:'registrar', label:'Registrar', badge:'Registrar', icon:'ti-user-check',
     subs:[
       {key:'reg_dashboard',      label:'Dashboard',            icon:'ti-layout-dashboard'},
-      {key:'enrolment_advising', label:'Enrolment Advising',   icon:'ti-notebook',        group:'ENROLMENT',       groupIcon:'ti-list-check'},
-      {key:'reg_students',       label:'Students',             icon:'ti-users'},
+      {key:'reg_students',       label:'Students',             icon:'ti-users',       group:'ENROLMENT',       groupIcon:'ti-list-check'},
+      {key:'enrolment_advising', label:'Enrolment Advising',   icon:'ti-notebook'},
       {key:'add_drop_sched',     label:'Add/Drop Schedules',   icon:'ti-calendar-event'},
-      {key:'curricula',          label:'Curricula',            icon:'ti-books',           group:'ACADEMIC',        groupIcon:'ti-school'},
-      {key:'subjects',           label:'Subjects',             icon:'ti-book'},
+      {key:'subjects',           label:'Subjects',             icon:'ti-book',  group:'ACADEMIC',        groupIcon:'ti-school'},
+      {key:'curricula',          label:'Curricula',            icon:'ti-books'},
       {key:'college_offerings',  label:'College Offerings',    icon:'ti-building',        group:'OFFERINGS',       groupIcon:'ti-layout-grid'},
       {key:'basic_ed_offerings', label:'Basic Ed Offerings',   icon:'ti-school'},
       {key:'off_sem_approvals',  label:'Off-Sem Approvals',    icon:'ti-clock'},
@@ -101,32 +87,33 @@ const MODS = Object.freeze([
       {key:'departments',        label:'Departments',          icon:'ti-building',        group:'DEPTS & PROGRAMS',groupIcon:'ti-building'},
       {key:'courses_programs',   label:'Courses & Programs',   icon:'ti-certificate'},
       {key:'school_years',       label:'School Years',         icon:'ti-calendar',        group:'SETTINGS',        groupIcon:'ti-settings'},
-      {key:'applicant_req',      label:'Applicant Requirements',icon:'ti-checklist'},
+      {key:'enrollment_schedules', label:'Enrollment Schedules', icon:'ti-calendar-stats'},
       {key:'reg_faculty',        label:'Faculty',              icon:'ti-user-star'},
       {key:'classrooms',         label:'Classrooms',           icon:'ti-door'},
+      {key:'applicant_req',      label:'Applicant Requirements',icon:'ti-checklist'},
       {key:'announcements',      label:'Announcements',        icon:'ti-speakerphone'},
     ]
   },
   {
     key:'accounting', label:'Accounting', badge:'Accounting', icon:'ti-building-bank',
     subs:[
-      {key:'accounting_dashboard', label:'Dashboard',         icon:'ti-layout-dashboard'},
-      {key:'student_ledger',       label:'Student Ledger',    icon:'ti-alert-circle'},
+      {key:'acc_payments',         label:'Payments',          icon:'ti-cash'},
+      {key:'discounts',            label:'Discounts',         icon:'ti-discount'},
+      {key:'or_series',            label:'OR Series',         icon:'ti-hash'},
       {key:'chart_of_accounts',    label:'Chart of Accounts', icon:'ti-list-numbers'},
       {key:'coa_mapping',          label:'COA Mapping',       icon:'ti-arrows-exchange'},
-      {key:'acc_payments',         label:'Payments',          icon:'ti-cash'},
-      {key:'student_submissions',  label:'Student Submissions',icon:'ti-upload'},
-      {key:'discounts',            label:'Discounts',         icon:'ti-discount'},
+      {key:'student_ledger',       label:'Student Ledger',    icon:'ti-alert-circle'},
+      {key:'accounting_dashboard', label:'Dashboard',         icon:'ti-layout-dashboard'},
       {key:'student_discounts',    label:'Student Discounts', icon:'ti-user-dollar'},
-      {key:'or_series',            label:'OR Series',         icon:'ti-hash'},
+      {key:'student_submissions',  label:'Student Submissions',icon:'ti-upload'},
     ]
   },
   {
     key:'assessment', label:'Assessment', badge:'Assessment', icon:'ti-file-text',
     subs:[
+      {key:'fee_setup',          label:'Fee Setup',           icon:'ti-settings'},
       {key:'assess_dashboard',   label:'Dashboard',           icon:'ti-layout-dashboard'},
       {key:'assessment_main',    label:'Assessment',          icon:'ti-file-text'},
-      {key:'fee_setup',          label:'Fee Setup',           icon:'ti-settings'},
       {key:'payment_terms',      label:'Payment Terms',       icon:'ti-calendar-dollar'},
       {key:'add_drop_processing',label:'Add/Drop Processing', icon:'ti-transfer'},
     ]
@@ -134,65 +121,78 @@ const MODS = Object.freeze([
   {
     key:'cashier', label:'Cashier', badge:'Cashier', icon:'ti-cash',
     subs:[
-      {key:'cashier_dashboard', label:'Dashboard', icon:'ti-layout-dashboard'},
       {key:'c_payments',        label:'Payments',  icon:'ti-cash'},
       {key:'c_or_series',       label:'OR Series', icon:'ti-hash'},
+      {key:'cashier_dashboard', label:'Dashboard', icon:'ti-layout-dashboard'},
     ]
   },
   {
+    key:'basic_education', label:'Basic Education', badge:'Basic Ed.', icon:'ti-school',
+    subs:[
+      {key:'be_sections',      label:'Basic Ed Sections',        icon:'ti-layout-grid'},
+      {key:'besh_sections',    label:'Senior High Sections',     icon:'ti-layout'},
+      {key:'be_grade_levels',  label:'Grade Levels',    icon:'ti-list-numbers'},
+      {key:'be_class_schedules',label:'Class Schedules',icon:'ti-calendar-time'},
+    ]
+  },
+    {
     key:'college_admission', label:'College Admission', badge:'Admission', icon:'ti-clipboard-list',
     subs:[
-      {key:'adm_dashboard',    label:'Dashboard',       icon:'ti-layout-dashboard'},
       {key:'applicants',       label:'Applicants',      icon:'ti-user-plus'},
+      {key:'adm_dashboard',    label:'Dashboard',       icon:'ti-layout-dashboard'},
       {key:'exam_schedules',   label:'Exam Schedules',  icon:'ti-calendar-event'},
     ]
   },
   {
     key:'basic_ed_admission', label:'Basic Ed Admission', badge:'Basic Ed Adm.', icon:'ti-clipboard-list',
     subs:[
-      {key:'be_adm_dashboard', label:'Dashboard',       icon:'ti-layout-dashboard'},
       {key:'be_applicants',    label:'Applicants',      icon:'ti-user-plus'},
+      {key:'be_adm_dashboard', label:'Dashboard',       icon:'ti-layout-dashboard'},
       {key:'be_exam_schedules',label:'Exam Schedules',  icon:'ti-calendar-event'},
-    ]
-  },
-  {
-    key:'basic_education', label:'Basic Education', badge:'Basic Ed.', icon:'ti-school',
-    subs:[
-      {key:'be_grade_levels',  label:'Grade Levels',    icon:'ti-list-numbers'},
-      {key:'be_sections',      label:'Sections',        icon:'ti-layout-grid'},
-      {key:'be_class_schedules',label:'Class Schedules',icon:'ti-calendar-time'},
     ]
   },
   {
     key:'faculty', label:'Faculty', badge:'Faculty', icon:'ti-user-star',
     subs:[
       {key:'fac_classes',       label:'Classes',        icon:'ti-books'},
-      {key:'fac_grade_encoding',label:'Grade Encoding', icon:'ti-pencil'},
       {key:'fac_attendance',    label:'Attendance',     icon:'ti-checkbox'},
+      {key:'fac_grade_encoding',label:'Grade Encoding', icon:'ti-pencil'},
     ]
   },
   {
     key:'student', label:'Student', badge:'Student', icon:'ti-user',
     subs:[
-      {key:'select_student',   label:'Select Student',      icon:'ti-eye'},
+      {key:'stu_grades',       label:'Grades',              icon:'ti-pencil'},
+      {key:'stu_schedule',     label:'Schedule',            icon:'ti-calendar-time'},
       {key:'stu_dashboard',    label:'Dashboard',           icon:'ti-layout-dashboard'},
       {key:'stu_enrollment',   label:'Enrollment',          icon:'ti-user-check'},
-      {key:'stu_grades',       label:'Grades',              icon:'ti-pencil'},
+      {key:'select_student',   label:'Select Student',      icon:'ti-eye'},
       {key:'stu_soa',          label:'Statement of Account',icon:'ti-file-text'},
       {key:'stu_assessment',   label:'My Assessment',       icon:'ti-file-invoice'},
-      {key:'stu_schedule',     label:'Schedule',            icon:'ti-calendar-time'},
     ]
   },
   {
     key:'applicant', label:'Applicant', badge:'Applicant', icon:'ti-users',
     subs:[
-      {key:'select_applicant', label:'Select Applicant', icon:'ti-eye'},
-      {key:'my_application',   label:'My Application',   icon:'ti-clipboard-list'},
       {key:'my_profile',       label:'My Profile',       icon:'ti-user'},
       {key:'documents',        label:'Documents',         icon:'ti-files'},
       {key:'next_steps',       label:'Next Steps',        icon:'ti-arrow-right'},
+      {key:'select_applicant', label:'Select Applicant', icon:'ti-eye'},
+      {key:'my_application',   label:'My Application',   icon:'ti-clipboard-list'},
     ]
   },
+{
+  key:'uphsl_portal',
+  label:'UPHSL Portal',
+  badge:'Portal',
+  icon:'ti-world',
+  subs:[
+    { key:'uphsl_login',      label:'Login Page',                  icon:'ti-lock' },
+    { key:'forgot_password',  label:'Forgot Password',             icon:'ti-key' },
+    { key:'college_register', label:'College Applicant Register',  icon:'ti-user-plus' },
+    { key:'basiced_register', label:'Basic Ed Applicant Register', icon:'ti-users' }
+  ]
+},
 ]);
 
 /* ── Build TM & moduleSubKeys (same as original) ─────────── */
@@ -282,6 +282,7 @@ function cacheDom() {
   DOM.vbtnGrid     = $('vbtn-grid');
   DOM.vbtnList     = $('vbtn-list');
   DOM.starredBtn   = $('starred-btn');
+  DOM.bugBtn       = $('bug-btn');
   DOM.userNameDisp = $('user-name-disp');
 }
 
@@ -398,7 +399,7 @@ function recordHistory(note, changeDesc) {
     ts: Date.now(), desc: changeDesc || 'Edited', author: currentUserName,
     snapshot: {title: note.title, desc: note.desc, fn: note.fn, module: note.module, tags: note.tags ? [...note.tags] : []},
   });
-  if (noteHistory[note.id].length > 10) noteHistory[note.id].length = 10;
+  if (noteHistory[note.id].length > 2) noteHistory[note.id].length = 2;
 }
 
 function promptUserName() {
@@ -459,6 +460,7 @@ function _clearSidebarActive() {
   $$('.mod-items').forEach(d => d.classList.remove('open'));
   $$('.sub-item').forEach(b => b.classList.remove('active'));
   DOM.starredBtn.classList.remove('active');
+  DOM.bugBtn.classList.remove('active');
 }
 function filterAll(el) {
   activeFilter = 'all'; _clearSidebarActive(); el.classList.add('open');
@@ -470,6 +472,11 @@ function filterStarred(el) {
   DOM.ptitle.textContent = 'Starred Notes'; DOM.pbadge.textContent = 'Starred';
   _invalidateRenderCache(); renderNotes();
 }
+function filterBugs(el) {
+  activeFilter = 'bugs'; _clearSidebarActive(); el.classList.add('active');
+  DOM.ptitle.textContent = 'Bug Reports'; DOM.pbadge.textContent = 'Bugs';
+  _invalidateRenderCache(); renderNotes();
+}
 function toggleMod(key, el) {
   const items = $('mi-' + key); const wasOpen = items.classList.contains('open');
   _clearSidebarActive();
@@ -479,6 +486,7 @@ function filterSub(subKey, label, badge, el) {
   activeFilter = subKey;
   $$('.sub-item').forEach(b => b.classList.remove('active'));
   DOM.starredBtn.classList.remove('active');
+  DOM.bugBtn.classList.remove('active');
   el.classList.add('active');
   DOM.ptitle.textContent = label; DOM.pbadge.textContent = badge;
   DOM.sinput.value = '';
@@ -491,6 +499,7 @@ function getFiltered() {
   const tagF = DOM.filterTag.value;
   let base;
   if (activeFilter === 'starred') { base = notes.filter(n => n.starred); }
+  else if (activeFilter === 'bugs') { base = notes.filter(n => n.hasBug); }
   else if (activeFilter !== 'all') {
     const subSet = moduleSubKeys[activeFilter];
     base = subSet ? notes.filter(n => subSet.has(n.module)) : notes.filter(n => n.module === activeFilter);
@@ -589,6 +598,7 @@ function initGridDelegation() {
     const btn = e.target.closest('[data-action]'); if (!btn) return;
     const id = parseInt(btn.dataset.id); const act = btn.dataset.action;
     if (act === 'star')      toggleStar(id);
+    else if (act === 'bug')  toggleBug(id);
     else if (act === 'conn') openConnModal(id);
     else if (act === 'hist') openHistoryModal(id);
     else if (act === 'edit') openModal(id);
@@ -640,7 +650,7 @@ function renderNotes() {
         return `<span class="tag-chip" style="background:${c.bg};color:${c.color}">${esc(t)}</span>`;
       }).join('');
       const authorStr = n.author ? `<span class="note-author"><i class="ti ti-user" style="font-size:10px"></i>${esc(n.author)}</span>` : '';
-      parts.push(`<div class="note-card${n.starred?' starred-card':''}" id="nc-${n.id}">${imgSection}<div class="note-body"><div class="note-header-row"><span class="note-tag">${tm.badge}</span><button class="star-btn${n.starred?' starred':''}" data-action="star" data-id="${n.id}"><i class="ti ti-star${n.starred?'-filled':''}"></i></button></div><div class="note-title">${esc(n.title)}</div><div class="note-desc">${esc(n.desc)}</div><div class="note-fn"><strong>What it does</strong>${esc(n.fn)}</div>${tagsHtml?`<div class="note-tags-row">${tagsHtml}</div>`:''}<div class="note-conn-bar">${connChips}<button class="note-conn-add" data-action="conn" data-id="${n.id}"><i class="ti ti-plus"></i>${connected.length?'Edit':'Add'} connections</button></div><div class="note-meta"><div style="display:flex;flex-direction:column;gap:1px">${authorStr}<span class="note-date"><i class="ti ti-calendar" style="font-size:10px;vertical-align:-1px;margin-right:2px"></i>${n.date||''}</span></div><div class="note-actions"><button class="icon-btn" data-action="hist" data-id="${n.id}"><i class="ti ti-history"></i></button><button class="icon-btn" data-action="edit" data-id="${n.id}"><i class="ti ti-edit"></i></button><button class="icon-btn" data-action="del" data-id="${n.id}"><i class="ti ti-trash"></i></button></div></div></div></div>`);
+      parts.push(`<div class="note-card${n.starred?' starred-card':''}${n.hasBug?' bug-card':''}" id="nc-${n.id}">${imgSection}<div class="note-body"><div class="note-header-row"><span class="note-tag">${tm.badge}</span><button class="star-btn${n.starred?' starred':''}" data-action="star" data-id="${n.id}"><i class="ti ti-star${n.starred?'-filled':''}"></i></button><button class="bug-btn${n.hasBug?' has-bug':''}" data-action="bug" data-id="${n.id}" title="Mark as bug"><i class="ti ti-bug${n.hasBug?'-filled':''}"></i></button></div><div class="note-title">${esc(n.title)}</div><div class="note-desc">${esc(n.desc)}</div><div class="note-fn"><strong>Bug Report</strong>${esc(n.fn)}</div>${tagsHtml?`<div class="note-tags-row">${tagsHtml}</div>`:''}<div class="note-conn-bar">${connChips}<button class="note-conn-add" data-action="conn" data-id="${n.id}"><i class="ti ti-plus"></i>${connected.length?'Edit':'Add'} connections</button></div><div class="note-meta"><div style="display:flex;flex-direction:column;gap:1px">${authorStr}<span class="note-date"><i class="ti ti-calendar" style="font-size:10px;vertical-align:-1px;margin-right:2px"></i>${n.date||''}</span></div><div class="note-actions"><button class="icon-btn" data-action="hist" data-id="${n.id}"><i class="ti ti-history"></i></button><button class="icon-btn" data-action="edit" data-id="${n.id}"><i class="ti ti-edit"></i></button><button class="icon-btn" data-action="del" data-id="${n.id}"><i class="ti ti-trash"></i></button></div></div></div></div>`);
     });
   }
   DOM.ngrid.innerHTML = parts.join('');
@@ -661,7 +671,8 @@ function toggleStar(id) {
   const card = $('nc-' + id);
   if (card && currentView === 'grid') {
     card.classList.toggle('starred-card', n.starred);
-    const btn = card.querySelector(`.star-btn[data-id="${id}"]`);
+    const btn = card.querySelector(`.
+      [data-id="${id}"]`);
     if (btn) {
       btn.classList.toggle('starred', n.starred);
       const icon = btn.querySelector('i');
@@ -669,6 +680,29 @@ function toggleStar(id) {
     }
     // If filtered to starred-only and we just un-starred, need full render
     if (activeFilter === 'starred' && !n.starred) renderNotes();
+  } else {
+    renderNotes();
+  }
+  saveToStorage();
+}
+
+function toggleBug(id) {
+  const n = noteMap.get(id); if (!n) return;
+  n.hasBug = !n.hasBug;
+  _invalidateRenderCache();
+
+  // Targeted patch for grid view
+  const card = $('nc-' + id);
+  if (card && currentView === 'grid') {
+    card.classList.toggle('bug-card', n.hasBug);
+    const btn = card.querySelector(`.bug-btn[data-id="${id}"]`);
+    if (btn) {
+      btn.classList.toggle('has-bug', n.hasBug);
+      const icon = btn.querySelector('i');
+      if (icon) icon.className = 'ti ti-bug' + (n.hasBug ? '-filled' : '');
+    }
+    // If filtered to bugs-only and we just un-marked, need full render
+    if (activeFilter === 'bugs' && !n.hasBug) renderNotes();
   } else {
     renderNotes();
   }
@@ -748,13 +782,13 @@ function openModal(id) {
   modalImgData = n ? n.img : null; modalTags = n && n.tags ? [...n.tags] : []; _modalTagColors = n && n.tagColors ? {...n.tagColors} : {}; selectedTagColor = 0;
   const overlay = document.createElement('div'); overlay.className = 'modal-overlay'; overlay.id = 'mov';
   const imgPrev = modalImgData ? `<img src="${modalImgData}" alt="preview">` : '';
-  overlay.innerHTML = `<div class="modal-box" style="width:480px">
+  overlay.innerHTML = `<div class="modal-box" style="width:900px;max-width:95vw">
     <div class="modal-head"><span class="modal-head-title"><i class="ti ti-notes" style="font-size:16px"></i>${n?'Edit Note':'Add Note'}</span><button class="modal-close" onclick="closeModal()"><i class="ti ti-x"></i></button></div>
     <div class="modal-body">
       <div class="form-row"><label class="form-label">Module / Sub-page</label><select id="m-mod">${getModOpts(n?n.module:'dashboard')}</select></div>
       <div class="form-row"><label class="form-label">Title</label><input type="text" id="m-title" value="${n?esc(n.title):''}" placeholder="Note title"></div>
       <div class="form-row"><label class="form-label">Description</label><textarea id="m-desc" placeholder="Brief description">${n?esc(n.desc):''}</textarea></div>
-      <div class="form-row"><label class="form-label">What it does</label><textarea id="m-fn" placeholder="Explain the function">${n?esc(n.fn):''}</textarea></div>
+      <div class="form-row"><label class="form-label">Bug Report</label><textarea id="m-fn" placeholder="Explain the bug">${n?esc(n.fn):''}</textarea></div>
       <div class="form-row"><label class="form-label">Custom Tags</label>
         <div class="tags-input-wrap" id="tags-wrap" onclick="this.querySelector('.tag-real-input').focus()">
           <div class="chips-area" style="display:flex;flex-wrap:wrap;gap:4px;align-items:center"></div>
@@ -800,7 +834,7 @@ function modalImgChange(inp) {
 function closeModal() { const o = $('mov'); if (o) o.remove(); modalImgData = null; }
 function saveNote(id) {
   const title = $('m-title').value.trim(), desc = $('m-desc').value.trim(), fn = $('m-fn').value.trim(), mod = $('m-mod').value;
-  if (!title || !desc || !fn) { alert('Please fill in all required fields.'); return; }
+  if (!title) { alert('Please fill in the Title field (required).'); return; }
   if (id) {
     const n = noteMap.get(id); recordHistory(n, 'Edited');
     const oldSnap = {...n, tags: n.tags ? [...n.tags] : []};
@@ -808,7 +842,7 @@ function saveNote(id) {
     updateIndexesForNote(oldSnap, n);
   } else {
     const ts = new Date().toISOString();
-    const newNote = {id: nextId++, module: mod, title, desc, fn, date: new Date().toLocaleDateString('en-US', {month:'short',day:'numeric',year:'numeric'}), createdAt: ts, img: modalImgData, tags: modalTags, tagColors: {..._modalTagColors}, author: currentUserName, starred: false};
+    const newNote = {id: nextId++, module: mod, title, desc, fn, date: new Date().toLocaleDateString('en-US', {month:'short',day:'numeric',year:'numeric'}), createdAt: ts, img: modalImgData, tags: modalTags, tagColors: {..._modalTagColors}, author: currentUserName, starred: false, hasBug: false};
     notes.unshift(newNote); addToIndexes(newNote);
   }
   _invalidateRenderCache();
