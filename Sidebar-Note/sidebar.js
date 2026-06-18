@@ -234,6 +234,10 @@ let currentUserName = 'Admin';
 let noteHistory     = {};
 let tagIndex        = new Map();
 
+/* ── Multi-image queue (modal) ─────────────────────────────── */
+let _modalImgQueue  = [];   // [{dataUrl, name}]
+let _modalActiveIdx = 0;    // which thumbnail is currently selected
+
 const moduleCountCache = new Map();
 
 function _rebuildModuleCountCache() {
@@ -623,7 +627,6 @@ function renderNotes() {
       }).join('');
       const authorStr = n.author ? `<span class="note-author"><i class="ti ti-user" style="font-size:10px"></i>${esc(n.author)}</span>` : '';
 
-      /* ── Link row shown under bug report if present ── */
       const linkHtml = n.link
         ? `<div style="margin-top:4px"><a href="${esc(n.link)}" target="_blank" rel="noopener" style="font-size:10px;color:#1a7a3a;word-break:break-all;display:inline-flex;align-items:center;gap:3px;text-decoration:none;"><i class="ti ti-external-link" style="font-size:11px;flex-shrink:0"></i>${esc(n.link)}</a></div>`
         : '';
@@ -739,18 +742,185 @@ function _renderTagChips(container) {
 }
 function _removeModalTag(tag, wrap) { modalTags = modalTags.filter(t => t !== tag); delete _modalTagColors[tag]; _renderTagChips(wrap); }
 
+/* ════════════════════════════════════════════════════════════
+   MODAL IMAGE QUEUE — multi-select + paste support
+════════════════════════════════════════════════════════════ */
+
+/**
+ * Reads a File object → base64 dataURL, returns a Promise.
+ */
+function _fileToDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload  = e => resolve(e.target.result);
+    r.onerror = () => reject(new Error('Read failed'));
+    r.readAsDataURL(file);
+  });
+}
+
+/**
+ * Adds one or more File objects to the queue and re-renders the zone.
+ */
+async function _enqueueFiles(files) {
+  for (const f of files) {
+    if (!f.type.startsWith('image/')) continue;
+    try {
+      const dataUrl = await _fileToDataUrl(f);
+      _modalImgQueue.push({ dataUrl, name: f.name || 'image' });
+    } catch(e) { console.warn('Could not read image:', e); }
+  }
+  if (_modalImgQueue.length > 0) {
+    _modalActiveIdx = _modalImgQueue.length - 1; // jump to newest
+    modalImgData    = _modalImgQueue[_modalActiveIdx].dataUrl;
+  }
+  _renderImgZone();
+}
+
+/**
+ * Selects an image from the queue by index.
+ */
+function _selectQueueImg(idx) {
+  _modalActiveIdx = idx;
+  modalImgData    = _modalImgQueue[idx].dataUrl;
+  _renderImgZone();
+}
+
+/**
+ * Removes one image from the queue by index.
+ */
+function _removeQueueImg(idx, e) {
+  e.stopPropagation();
+  _modalImgQueue.splice(idx, 1);
+  if (_modalImgQueue.length === 0) {
+    modalImgData    = null;
+    _modalActiveIdx = 0;
+  } else {
+    _modalActiveIdx = Math.min(_modalActiveIdx, _modalImgQueue.length - 1);
+    modalImgData    = _modalImgQueue[_modalActiveIdx].dataUrl;
+  }
+  _renderImgZone();
+}
+
+/**
+ * Re-draws everything inside #miz based on _modalImgQueue.
+ */
+function _renderImgZone() {
+  const zone = $('miz'); if (!zone) return;
+  const hasImgs = _modalImgQueue.length > 0;
+
+  // ── main preview ──
+  let preview = zone.querySelector('.miz-preview');
+  if (!preview) {
+    preview = document.createElement('img');
+    preview.className = 'miz-preview';
+    preview.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:8px;pointer-events:none';
+    zone.insertBefore(preview, zone.firstChild);
+  }
+  preview.src   = hasImgs ? _modalImgQueue[_modalActiveIdx].dataUrl : '';
+  preview.style.display = hasImgs ? 'block' : 'none';
+
+  // ── placeholder text / icon ──
+  const icon = $('miz-icon'), txt = $('miz-txt');
+  if (icon) icon.style.display = hasImgs ? 'none' : '';
+  if (txt)  txt.style.display  = hasImgs ? 'none' : '';
+
+  // ── paste hint ──
+  let hint = zone.querySelector('.miz-paste-hint');
+  if (!hint) {
+    hint = document.createElement('div');
+    hint.className = 'miz-paste-hint';
+    hint.style.cssText = 'position:absolute;top:6px;left:8px;font-size:9px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:rgba(255,255,255,0.85);background:rgba(0,0,0,0.45);padding:2px 7px;border-radius:10px;pointer-events:none;backdrop-filter:blur(4px)';
+    hint.textContent = 'Ctrl+V to paste';
+    zone.appendChild(hint);
+  }
+  hint.style.display = hasImgs ? 'none' : '';
+
+  // ── thumbnail strip ──
+  let strip = zone.querySelector('.miz-strip');
+  if (!strip) {
+    strip = document.createElement('div');
+    strip.className = 'miz-strip';
+    strip.style.cssText = 'position:absolute;bottom:0;left:0;right:0;display:flex;gap:4px;padding:6px;background:linear-gradient(transparent,rgba(0,0,0,0.55));border-radius:0 0 8px 8px;overflow-x:auto;scrollbar-width:none';
+    zone.appendChild(strip);
+  }
+
+  if (_modalImgQueue.length <= 1) {
+    strip.style.display = 'none';
+  } else {
+    strip.style.display = 'flex';
+    strip.innerHTML = _modalImgQueue.map((img, i) => `
+      <div class="miz-thumb${i === _modalActiveIdx ? ' miz-thumb-active' : ''}"
+           onclick="_selectQueueImg(${i})"
+           style="position:relative;flex-shrink:0;width:44px;height:44px;border-radius:5px;overflow:hidden;cursor:pointer;border:2px solid ${i === _modalActiveIdx ? '#4fc87a' : 'rgba(255,255,255,0.3)'};transition:border-color .12s">
+        <img src="${img.dataUrl}" style="width:100%;height:100%;object-fit:cover;display:block;pointer-events:none">
+        <button onclick="_removeQueueImg(${i}, event)"
+                style="position:absolute;top:1px;right:1px;width:16px;height:16px;border-radius:50%;border:none;background:rgba(0,0,0,0.7);color:#fff;font-size:9px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;padding:0">×</button>
+      </div>`).join('');
+  }
+
+  // ── count badge ──
+  let badge = zone.querySelector('.miz-count');
+  if (!badge) {
+    badge = document.createElement('div');
+    badge.className = 'miz-count';
+    badge.style.cssText = 'position:absolute;top:6px;right:8px;font-size:9px;font-weight:700;background:rgba(26,122,58,0.9);color:#fff;padding:2px 7px;border-radius:10px;pointer-events:none';
+    zone.appendChild(badge);
+  }
+  badge.style.display = _modalImgQueue.length > 1 ? '' : 'none';
+  badge.textContent   = `${_modalActiveIdx + 1} / ${_modalImgQueue.length}`;
+}
+
+/**
+ * Sets up paste listener scoped to the modal overlay.
+ * Returns a cleanup function to call when modal closes.
+ */
+function _initModalPaste(overlayEl) {
+  function onPaste(e) {
+    // Only fire when the modal is in the DOM
+    if (!document.contains(overlayEl)) return;
+    const items = e.clipboardData?.items;
+    if (!items) return;
+    const imageFiles = [];
+    for (const item of items) {
+      if (item.kind === 'file' && item.type.startsWith('image/')) {
+        const f = item.getAsFile();
+        if (f) imageFiles.push(f);
+      }
+    }
+    if (imageFiles.length > 0) {
+      e.preventDefault();
+      _enqueueFiles(imageFiles);
+      // Flash the zone briefly to confirm paste was received
+      const zone = $('miz');
+      if (zone) {
+        zone.style.transition = 'box-shadow .15s';
+        zone.style.boxShadow  = '0 0 0 3px #4fc87a';
+        setTimeout(() => { if (zone) zone.style.boxShadow = ''; }, 600);
+      }
+    }
+  }
+  document.addEventListener('paste', onPaste);
+  return () => document.removeEventListener('paste', onPaste);
+}
+
+/* ── openModal ────────────────────────────────────────────── */
 function openModal(id) {
   const n = id ? noteMap.get(id) : null;
-  modalImgData = n ? n.img : null;
-  modalTags = n && n.tags ? [...n.tags] : [];
+  modalImgData    = n ? n.img : null;
+  modalTags       = n && n.tags ? [...n.tags] : [];
   _modalTagColors = n && n.tagColors ? {...n.tagColors} : {};
   selectedTagColor = 0;
+
+  // Reset image queue; pre-load existing image if editing
+  _modalImgQueue  = [];
+  _modalActiveIdx = 0;
+  if (modalImgData) {
+    _modalImgQueue.push({ dataUrl: modalImgData, name: 'existing' });
+  }
 
   const overlay = document.createElement('div');
   overlay.className = 'modal-overlay';
   overlay.id = 'mov';
-
-  const imgPrev = modalImgData ? `<img src="${modalImgData}" alt="preview">` : '';
 
   overlay.innerHTML = `<div class="modal-box" style="width:900px;max-width:95vw">
     <div class="modal-head">
@@ -794,12 +964,16 @@ function openModal(id) {
           <input type="url" id="m-link" value="${n ? esc(n.link || '') : ''}" placeholder="https://example.com/page-with-the-problem">
         </div>
         <div class="form-row" style="flex:1">
-          <label class="form-label">Screenshot / Image</label>
-          <div class="img-upload-zone" id="miz" style="flex:1;min-height:0;aspect-ratio:unset">
-            ${imgPrev}
-            <i class="ti ti-upload" id="miz-icon" style="${modalImgData ? 'display:none' : ''}"></i>
-            <span id="miz-txt" style="${modalImgData ? 'display:none' : ''}">Click to upload image</span>
-            <input type="file" accept="image/*" onchange="modalImgChange(this)">
+          <label class="form-label" style="display:flex;align-items:center;justify-content:space-between">
+            <span>Screenshot / Image</span>
+            <span style="font-size:10px;color:var(--primary-icon);font-weight:400;text-transform:none;letter-spacing:0">
+              Click · multi-select · or paste (Ctrl+V)
+            </span>
+          </label>
+          <div class="img-upload-zone" id="miz" style="flex:1;min-height:0;aspect-ratio:unset;position:relative;overflow:hidden">
+            <i class="ti ti-upload" id="miz-icon"></i>
+            <span id="miz-txt">Click or paste images here</span>
+            <input type="file" accept="image/*" multiple style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;z-index:2" onchange="modalImgChange(this)">
           </div>
         </div>
       </div>
@@ -815,6 +989,13 @@ function openModal(id) {
 
   $('app').appendChild(overlay);
   buildTagsUI($('tags-wrap'), modalTags, _modalTagColors);
+
+  // Render initial zone state (shows existing image if editing)
+  _renderImgZone();
+
+  // Wire up paste listener
+  const cleanupPaste = _initModalPaste(overlay);
+  overlay._cleanupPaste = cleanupPaste;
 
   const tagInp = overlay.querySelector('.tag-real-input');
   tagInp.addEventListener('keydown', e => {
@@ -836,21 +1017,26 @@ function selectTagColor(ci, el) {
   $$('#mov .tag-color-dot').forEach(d => d.classList.remove('sel'));
   el.classList.add('sel');
 }
+
+/**
+ * Called by the file <input multiple> — enqueues all selected files.
+ */
 function modalImgChange(inp) {
-  const f = inp.files[0]; if (!f) return;
-  const r = new FileReader();
-  r.onload = ev => {
-    modalImgData = ev.target.result;
-    const z = $('miz'); let img = z.querySelector('img');
-    if (!img) { img = document.createElement('img'); z.insertBefore(img, z.firstChild); }
-    img.src = modalImgData;
-    const icon = $('miz-icon'), txt = $('miz-txt');
-    if (icon) icon.style.display = 'none';
-    if (txt)  txt.style.display  = 'none';
-  };
-  r.readAsDataURL(f);
+  if (!inp.files || inp.files.length === 0) return;
+  _enqueueFiles(Array.from(inp.files));
+  inp.value = ''; // reset so same files can be re-selected
 }
-function closeModal() { const o = $('mov'); if (o) o.remove(); modalImgData = null; }
+
+function closeModal() {
+  const o = $('mov');
+  if (o) {
+    if (typeof o._cleanupPaste === 'function') o._cleanupPaste();
+    o.remove();
+  }
+  modalImgData    = null;
+  _modalImgQueue  = [];
+  _modalActiveIdx = 0;
+}
 
 function saveNote(id) {
   const title = $('m-title').value.trim();
@@ -861,6 +1047,11 @@ function saveNote(id) {
 
   if (!title) { alert('Please fill in the Title field (required).'); return; }
 
+  // Use the currently-selected image from the queue
+  const finalImg = _modalImgQueue.length > 0
+    ? _modalImgQueue[_modalActiveIdx].dataUrl
+    : null;
+
   if (id) {
     const n = noteMap.get(id);
     recordHistory(n, 'Edited');
@@ -870,7 +1061,7 @@ function saveNote(id) {
     n.fn        = fn;
     n.link      = link;
     n.module    = mod;
-    n.img       = modalImgData;
+    n.img       = finalImg;
     n.tags      = modalTags;
     n.tagColors = {..._modalTagColors};
     n.author    = currentUserName;
@@ -886,7 +1077,7 @@ function saveNote(id) {
       link,
       date: new Date().toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'}),
       createdAt: ts,
-      img: modalImgData,
+      img: finalImg,
       tags: modalTags,
       tagColors: {..._modalTagColors},
       author: currentUserName,
